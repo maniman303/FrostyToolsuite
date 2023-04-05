@@ -33,6 +33,7 @@ namespace FrostyModManager
             set => launchGameImmediately = value;
         }
 
+        public static string LaunchGame { get; private set; }
         public static string LaunchProfile { get; private set; }
         public static string LaunchArgs { get; private set; }
 
@@ -183,6 +184,32 @@ namespace FrostyModManager
                     LaunchProfile = e.Args[1];
 
                     for (int i = 2; i < e.Args.Length; i++)
+                    {
+                        arg = e.Args[i];
+                        sb.Append(arg + " ");
+                    }
+                }
+                else if (arg.ToLower() == "-game")
+                {
+                    if (e.Args.Length < 4)
+                    {
+                        FrostyMessageBox.Show("-game argument found, but missing profile name", "Frosty Mod Manager");
+                        Current.Shutdown();
+                        return;
+                    }
+
+                    if (e.Args[2].ToLower() != "-launch")
+                    {
+                        FrostyMessageBox.Show("-launch argumetn missing for game profile", "Frosty Mod Manager");
+                        Current.Shutdown();
+                        return;
+                    }
+
+                    LaunchGame = e.Args[1];
+                    launchGameImmediately = true;
+                    LaunchProfile = e.Args[3];
+
+                    for (int i = 4; i < e.Args.Length; i++)
                     {
                         arg = e.Args[i];
                         sb.Append(arg + " ");
