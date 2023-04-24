@@ -11,6 +11,7 @@ using Frosty.Controls;
 using Frosty.Core;
 using FrostySdk.IO;
 using FrostySdk.Managers;
+using System.Linq;
 
 namespace FrostyModManager.Windows
 {
@@ -27,6 +28,30 @@ namespace FrostyModManager.Windows
         public PrelaunchWindow2()
         {
             InitializeComponent();
+            RefreshConfigurationList();
+
+            TryLaunchGameProfile();
+        }
+
+        private async Task TryLaunchGameProfile()
+        {
+            var gameProfile = App.LaunchGame;
+
+            if (configs == null || string.IsNullOrEmpty(gameProfile))
+            {
+                return;
+            }
+
+            var config = configs.FirstOrDefault(c => c.ProfileName.ToLower() == gameProfile.ToLower());
+
+            if (config == null)
+            {
+                return;
+            }
+
+            LaunchConfig(config.ProfileName);
+            await Task.Delay(1);
+            Close();
         }
 
         private void LaunchConfig(string profile /*Config config, string filename*/)
