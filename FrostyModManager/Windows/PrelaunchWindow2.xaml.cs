@@ -33,7 +33,7 @@ namespace FrostyModManager.Windows
             TryLaunchGameProfile();
         }
 
-        private async Task TryLaunchGameProfile()
+        private async void TryLaunchGameProfile()
         {
             var gameProfile = App.LaunchGame;
 
@@ -49,12 +49,16 @@ namespace FrostyModManager.Windows
                 return;
             }
 
-            LaunchConfig(config.ProfileName);
-            await Task.Delay(1);
+            WindowState = WindowState.Minimized;
+
+            LaunchConfig(config.ProfileName, true);
+
+            await Task.Delay(250);
+
             Close();
         }
 
-        private void LaunchConfig(string profile /*Config config, string filename*/)
+        private void LaunchConfig(string profile, bool isMinimized = false)
         {
             //App.configFilename = filename;
             //Config.Load(config); // Load game config
@@ -117,6 +121,12 @@ namespace FrostyModManager.Windows
 
             // launch Mod Manager
             SplashWindow splashWin = new SplashWindow();
+
+            if (isMinimized)
+            {
+                splashWin.WindowState = WindowState.Minimized;
+            }
+
             App.Current.MainWindow = splashWin;
             splashWin.Show();
         }

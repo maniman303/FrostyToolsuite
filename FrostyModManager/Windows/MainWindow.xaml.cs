@@ -435,22 +435,6 @@ namespace FrostyModManager
                 AddPack("Default");
             packsComboBox.ItemsSource = packs;
 
-            if (App.LaunchGameImmediately)
-            {
-                int index = packs.FindIndex((FrostyPack a) => a.Name.Equals(App.LaunchProfile, StringComparison.OrdinalIgnoreCase));
-                if (index == -1)
-                {
-                    FrostyMessageBox.Show(string.Format("Unable to find pack with name {0}. Launch request cancelled", App.LaunchProfile), "Frosty Mod Manager");
-                    App.LaunchGameImmediately = false;
-                }
-                else
-                {
-                    packsComboBox.SelectedIndex = index;
-                    launchButton_Click(this, new RoutedEventArgs());
-                    return;
-                }
-            }
-
             if (toolsMenuItem.Items.Count != 0)
                 toolsMenuItem.Items.Add(new Separator());
 
@@ -486,6 +470,21 @@ namespace FrostyModManager
             else if (Config.Get("ApplyModOrder", "List") == "Priority")
             {
                 orderComboBox.SelectedIndex = 1;
+            }
+
+            if (App.LaunchGameImmediately)
+            {
+                int index = packs.FindIndex((FrostyPack a) => a.Name.Equals(App.LaunchProfile, StringComparison.OrdinalIgnoreCase));
+                if (index == -1)
+                {
+                    FrostyMessageBox.Show(string.Format("Unable to find pack with name {0}. Launch request cancelled", App.LaunchProfile), "Frosty Mod Manager");
+                    App.LaunchGameImmediately = false;
+                }
+                else
+                {
+                    packsComboBox.SelectedIndex = index;
+                    launchButton_Click(this, new RoutedEventArgs());
+                }
             }
 
             GC.Collect();
