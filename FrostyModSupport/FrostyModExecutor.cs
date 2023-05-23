@@ -1271,10 +1271,13 @@ namespace Frosty.ModSupport
                     if (newInstallation)
                         reason = "New installation detected.";
 
-                    FrostyMessageBox.Show(reason + "\r\n\r\nShortly you will be prompted for elevated privileges, this is required to create symbolic links between the original data and the new modified data. Please ensure that you accept this to avoid any issues.", "Frosty Toolsuite");
+                    Logger.Log("Creating symlinks");
+                    App.Logger.Log("Creating symlinks");
+
+                    //FrostyMessageBox.Show(reason + "\r\n\r\nShortly you will be prompted for elevated privileges, this is required to create symbolic links between the original data and the new modified data. Please ensure that you accept this to avoid any issues.", "Frosty Toolsuite");
                     if (!RunSymbolicLinkProcess(cmdArgs))
                     {
-                        FrostyMessageBox.Show("Frosty needs to generate symbolic links, please ensure that you accept this so you don't have to regenerate ModData.", "Frosty Editor");
+                        FrostyMessageBox.Show("Frosty needs to generate symbolic links, but it encountered an issue. Please try again.", "Frosty Editor");
                         if (!RunSymbolicLinkProcess(cmdArgs))
                         {
                             Directory.Delete(modDataPath, true);
