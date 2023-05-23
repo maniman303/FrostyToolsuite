@@ -51,7 +51,10 @@ namespace FrostyModManager
             Assembly entryAssembly = Assembly.GetEntryAssembly();
             Version = entryAssembly.GetName().Version.ToString();
 
-            Logger = new FrostyLogger();
+            var logger = new FrostyLogger();
+            logger.Initialize();
+
+            Logger = logger;
             Logger.Log("Frosty Mod Manager v{0}", Version);
 
             FileUnblocker.UnblockDirectory(".\\");

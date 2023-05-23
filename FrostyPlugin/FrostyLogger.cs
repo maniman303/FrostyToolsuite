@@ -2,6 +2,7 @@
 using FrostySdk.Interfaces;
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Windows;
@@ -11,8 +12,16 @@ namespace FrostyCore
 {
     public class FrostyLogger : ILogger, INotifyPropertyChanged
     {
-        public string LogText => sb.ToString();
+        private const string logName = "frosty_log.txt";
+        private bool isLogInitialized = false;
         private StringBuilder sb = new StringBuilder();
+        public string LogText => sb.ToString();
+
+        public void Initialize()
+        {
+            File.Delete(logName);
+            isLogInitialized = true;
+        }
 
         public void Log(string text, params object[] vars)
         {
@@ -25,6 +34,9 @@ namespace FrostyCore
 
             sb.AppendLine(string.Format("[" + DateTime.Now.ToLongTimeString() + "]: " + category + text, vars));
             RaisePropertyChanged("LogText");
+
+            var formatted = string.Format(text, vars);
+            LogToFile($"Log: {formatted}");
         }
 
         public void LogWarning(string text, params object[] vars)
@@ -38,6 +50,9 @@ namespace FrostyCore
 
             sb.AppendLine(string.Format("[" + DateTime.Now.ToLongTimeString() + "]: " + category + "(WARNING) " + text, vars));
             RaisePropertyChanged("LogText");
+
+            var formatted = string.Format(text, vars);
+            LogToFile($"Warning: {formatted}");
         }
 
         public void LogError(string text, params object[] vars)
@@ -51,6 +66,9 @@ namespace FrostyCore
 
             sb.AppendLine(string.Format("[" + DateTime.Now.ToLongTimeString() + "]: " + category + "(ERROR) " + text, vars));
             RaisePropertyChanged("LogText");
+
+            var formatted = string.Format(text, vars);
+            LogToFile($"Error: {formatted}");
         }
 
         public void AddBinding(UIElement elementToBind, DependencyProperty propertyToBind)
@@ -68,6 +86,19 @@ namespace FrostyCore
         protected void RaisePropertyChanged(string name)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+
+        private void LogToFile(string text)
+        {
+            if (!isLogInitialized)
+            {
+                return;
+            }
+
+            using (StreamWriter writer = new StreamWriter(logName, true))
+            {
+                writer.WriteLine(text);
+            }
         }
     }
 }
