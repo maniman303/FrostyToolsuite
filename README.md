@@ -1,6 +1,15 @@
 # FrostyToolsuite
 The most advanced modding platform for games running on DICE's Frostbite game engine.
 
+## maniman303-Fork
+- Symlink fixed on Linux.
+- Added new launch parameter to create direct-to-game shortcuts. Use it like this `FrostyModManager.exe -game MassEffectAndromeda -launch Default`. First option is game id and second is the profile to be used.
+
+## How to find game id
+1. Launch Frosty Mod Manager at least once and add your game to it.
+2. Go to `%LocalAppData%\Frosty` and open `manager_config.json`.
+3. Under `"Games":` you will have your game id.
+
 ## Setup
 
 1. Download Git https://git-scm.com/download/win.
