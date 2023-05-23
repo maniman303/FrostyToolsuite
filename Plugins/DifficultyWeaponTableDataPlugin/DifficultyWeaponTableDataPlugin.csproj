@@ -59,8 +59,8 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy /Y $(TargetPath) $(SolutionDir)$(OutDir)Plugins\" />
-		<Exec Command="xcopy /Y $(TargetPath) $(SolutionDir)..\FrostyModManager\$(OutDir)Plugins\" />
+    <Exec Command="xcopy /Y %22$(TargetPath)%22 %22$(SolutionDir)$(OutDir)Plugins\%22" />
+		<Exec Command="xcopy /Y %22$(TargetPath)%22 %22$(SolutionDir)..\FrostyModManager\$(OutDir)Plugins\%22" />
   </Target>
 
 </Project>
