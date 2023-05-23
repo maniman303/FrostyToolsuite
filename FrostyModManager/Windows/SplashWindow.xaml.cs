@@ -127,7 +127,7 @@ namespace FrostyModManager.Windows
             // show the main editor window
             MainWindow win = new MainWindow();
 
-            if (WindowState == WindowState.Minimized)
+            if (WindowState == WindowState.Minimized || App.LaunchGameImmediately)
             {
                 win.WindowState = WindowState.Minimized;
             }

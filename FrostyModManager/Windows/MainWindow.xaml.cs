@@ -482,6 +482,8 @@ namespace FrostyModManager
                 }
                 else
                 {
+                    WindowState = WindowState.Minimized;
+
                     packsComboBox.SelectedIndex = index;
                     launchButton_Click(this, new RoutedEventArgs());
                 }
