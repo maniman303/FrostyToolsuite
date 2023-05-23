@@ -2162,19 +2162,20 @@ namespace Frosty.ModSupport
 
         private bool RunSymbolicLinkProcess(List<SymLinkStruct> cmdArgs)
         {
-            using (TextWriter writer = new StreamWriter(new FileStream(AppDomain.CurrentDomain.BaseDirectory + "\\run.bat", FileMode.Create)))
+            foreach (SymLinkStruct arg in cmdArgs)
             {
-                foreach (SymLinkStruct arg in cmdArgs)
-                    writer.WriteLine("mklink" + ((arg.isFolder) ? "/D " : " ") + "\"" + arg.dest + "\" \"" + arg.src + "\"");
-            }
-
-            // create data and update symbolic links
-            ExecuteProcess("cmd.exe", "/C \"" + AppDomain.CurrentDomain.BaseDirectory + "\\run.bat\"", true, true);
-
-            // delete batch
-            if (File.Exists("run.bat"))
-            {
-                File.Delete("run.bat");
+                try
+                {
+                    if (arg.isFolder)
+                    {
+                        CloneDirectory(arg.src, arg.dest);
+                    }
+                    else
+                    {
+                        CreateHardLink(arg.dest, arg.src, IntPtr.Zero);
+                    }
+                }
+                catch { }
             }
 
             // validate
@@ -2185,6 +2186,26 @@ namespace Frosty.ModSupport
             }
 
             return true;
+        }
+
+        private static void CloneDirectory(string root, string dest)
+        {
+            Directory.CreateDirectory(dest);
+
+            foreach (var directory in Directory.GetDirectories(root))
+            {
+                //Get the path of the new directory
+                var newDirectory = Path.Combine(dest, Path.GetFileName(directory));
+                //Create the directory if it doesn't already exist
+                Directory.CreateDirectory(newDirectory);
+                //Recursively clone the directory
+                CloneDirectory(directory, newDirectory);
+            }
+
+            foreach (var file in Directory.GetFiles(root))
+            {
+                CreateHardLink(Path.Combine(dest, Path.GetFileName(file)), file, IntPtr.Zero);
+            }
         }
 
         public static void ExecuteProcess(string processName, string args, bool waitForExit = false, bool asAdmin = false, Dictionary<string, string> env = null)
@@ -2249,5 +2270,12 @@ namespace Frosty.ModSupport
                     File.Copy(baseFi.FullName, modFi.FullName, true);
             }
         }
+
+        [DllImport("Kernel32.dll", CharSet = CharSet.Unicode)]
+        static extern bool CreateHardLink(
+            string lpFileName,
+            string lpExistingFileName,
+            IntPtr lpSecurityAttributes
+        );
     }
 }
