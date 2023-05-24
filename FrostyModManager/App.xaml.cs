@@ -193,7 +193,6 @@ namespace FrostyModManager
                         return;
                     }
 
-                    launchGameImmediately = true;
                     LaunchProfile = e.Args[1];
 
                     for (int i = 2; i < e.Args.Length; i++)
@@ -213,7 +212,7 @@ namespace FrostyModManager
 
                     if (e.Args[2].ToLower() != "-launch")
                     {
-                        FrostyMessageBox.Show("-launch argumetn missing for game profile", "Frosty Mod Manager");
+                        FrostyMessageBox.Show("-launch argument missing for game profile", "Frosty Mod Manager");
                         Current.Shutdown();
                         return;
                     }

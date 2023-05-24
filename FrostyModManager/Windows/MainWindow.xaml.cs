@@ -482,8 +482,6 @@ namespace FrostyModManager
                 }
                 else
                 {
-                    WindowState = WindowState.Minimized;
-
                     packsComboBox.SelectedIndex = index;
                     launchButton_Click(this, new RoutedEventArgs());
                 }
@@ -677,11 +675,23 @@ namespace FrostyModManager
             }, showCancelButton: true, cancelCallback: (task) => cancelToken.Cancel());
 
             if (retCode != -1)
+            {
                 WindowState = WindowState.Minimized;
+            }
 
             // kill the application if launched from the command line
             if (App.LaunchGameImmediately)
+            {
                 Close();
+            }
+
+            WindowStyle = WindowStyle.SingleBorderWindow;
+            Height = double.NaN;
+            Width = double.NaN;
+            ShowInTaskbar = true;
+            ShowActivated = true;
+
+            Show();
 
             GC.Collect();
         }

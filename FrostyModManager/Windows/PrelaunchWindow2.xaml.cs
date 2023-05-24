@@ -53,7 +53,7 @@ namespace FrostyModManager.Windows
 
             LaunchConfig(config.ProfileName, true);
 
-            await Task.Delay(250);
+            await Task.Delay(1);
 
             Close();
         }
