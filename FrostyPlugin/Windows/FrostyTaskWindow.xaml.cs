@@ -81,6 +81,7 @@ namespace Frosty.Core.Windows
             _callback = callback;
             _cancelCallback = cancelCallback;
 
+            DataContext = this;
             Owner = owner;
             TaskLogger = new FrostyTaskLogger(this);
             Loaded += FrostyTaskWindow_Loaded;
@@ -126,8 +127,6 @@ namespace Frosty.Core.Windows
 
         private async void FrostyTaskWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            await Task.Delay(1000);
-
             await Task.Run(() =>
             {
                 _callback(this);

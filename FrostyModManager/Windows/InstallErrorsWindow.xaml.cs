@@ -48,23 +48,13 @@ namespace FrostyModManager
         {
             InitializeComponent();
             _errors = errors;
-
-            if (!OperatingSystemHelper.IsWine())
-            {
-                CenterDialog();
-            }
         }
 
-        private async void FrostyTaskWindow_Loaded(object sender, RoutedEventArgs e)
+        private void FrostyTaskWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            await Task.Delay(750);
-
             errorListView.ItemsSource = _errors;
 
-            if (OperatingSystemHelper.IsWine())
-            {
-                CenterDialog();
-            }
+            CenterDialog();
         }
 
         private void CenterDialog()

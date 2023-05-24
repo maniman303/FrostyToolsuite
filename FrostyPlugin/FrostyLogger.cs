@@ -15,6 +15,7 @@ namespace FrostyCore
         private const string logName = "frosty_log.txt";
         private bool isLogInitialized = false;
         private StringBuilder sb = new StringBuilder();
+        private object _lock = new object();
         public string LogText => sb.ToString();
 
         public void Initialize()
@@ -95,9 +96,12 @@ namespace FrostyCore
                 return;
             }
 
-            using (StreamWriter writer = new StreamWriter(logName, true))
+            lock (_lock)
             {
-                writer.WriteLine(text);
+                using (StreamWriter writer = new StreamWriter(logName, true))
+                {
+                    writer.WriteLine(text);
+                }
             }
         }
     }

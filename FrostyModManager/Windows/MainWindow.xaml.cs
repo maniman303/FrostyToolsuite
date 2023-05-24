@@ -290,6 +290,7 @@ namespace FrostyModManager
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = this;
             TaskbarItemInfo = new System.Windows.Shell.TaskbarItemInfo();
 
             tabContent.HeaderControl = tabControl;
