@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -41,12 +42,21 @@ namespace FrostyModManager
     /// </summary>
     public partial class InstallErrorsWindow : FrostyDockableWindow
     {
+        private List<ImportErrorInfo> _errors;
+
         public InstallErrorsWindow(List<ImportErrorInfo> errors)
         {
             InitializeComponent();
-            errorListView.ItemsSource = errors;
+            _errors = errors;
+        }
 
-            Window mainWin = Application.Current.MainWindow;
+        private async void FrostyTaskWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            await Task.Delay(1000);
+
+            errorListView.ItemsSource = _errors;
+
+            Window mainWin = App.Current.MainWindow;
             if (mainWin != null)
             {
                 double x = mainWin.Left + (mainWin.Width / 2.0);

@@ -930,6 +930,9 @@ namespace FrostyModManager
             if (e.Data.GetDataPresent(DataFormats.FileDrop, true) == true)
             {
                 string[] filenames = (string[])e.Data.GetData(DataFormats.FileDrop, true);
+
+                App.Logger.Log($"Drag and droping files: {string.Join(", ", filenames)}");
+
                 InstallMods(filenames);
 
                 ICollectionView view = CollectionViewSource.GetDefaultView(availableModsList.ItemsSource);
@@ -946,9 +949,16 @@ namespace FrostyModManager
 
             FrostyTaskWindow.Show("Installing Mods", "", (task) =>
             {
+                App.Logger.Log("Installing mods task");
+
                 foreach (string filename in filenames)
                 {
+                    App.Logger.Log($"Installing {filename}");
+
                     FileInfo fi = new FileInfo(filename);
+
+                    App.Logger.Log($"Found FileInfo for {filename}");
+
                     task.Update(fi.Name);
 
                     try
@@ -1378,10 +1388,10 @@ namespace FrostyModManager
                             }
 
                             // copy mod over
-                            File.Copy(fi.FullName, Path.Combine(modsDir.FullName, fi.Name));
+                            File.Copy(fi.FullName, Path.Combine(modsDir.FullName, fi.Name), true);
                             foreach (FileInfo archiveFi in fi.Directory.GetFiles(fi.Name.Replace(".fbmod", "") + "_*.archive"))
                             {
-                                File.Copy(archiveFi.FullName, Path.Combine(modsDir.FullName, archiveFi.Name));
+                                File.Copy(archiveFi.FullName, Path.Combine(modsDir.FullName, archiveFi.Name), true);
                             }
 
                             // add mod to manager

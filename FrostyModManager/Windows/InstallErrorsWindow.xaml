@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:FrostyModManager"
         xmlns:ctrl="clr-namespace:Frosty.Controls;assembly=FrostyControls"
         mc:Ignorable="d"
+        Loaded="FrostyTaskWindow_Loaded"
         Title="Installation Report" Height="300" Width="600"
         ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
         Icon="/FrostyModManager;component/AppIcon.ico">

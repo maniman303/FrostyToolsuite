@@ -126,6 +126,8 @@ namespace Frosty.Core.Windows
 
         private async void FrostyTaskWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            await Task.Delay(1000);
+
             await Task.Run(() =>
             {
                 _callback(this);
@@ -161,7 +163,12 @@ namespace Frosty.Core.Windows
 
         public static void Show(Window owner, string task, string initialStatus, FrostyTaskCallback callback, bool showCancelButton = false, FrostyTaskCancelCallback cancelCallback = null)
         {
+            App.Logger.Log("Showing new Frosty window");
+
             FrostyTaskWindow win = new FrostyTaskWindow(owner, task, initialStatus, callback, showCancelButton, cancelCallback);
+
+            App.Logger.Log("FrostyTaskWindow created");
+
             win.ShowDialog();
         }
 
