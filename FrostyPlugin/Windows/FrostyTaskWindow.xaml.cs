@@ -162,11 +162,7 @@ namespace Frosty.Core.Windows
 
         public static void Show(Window owner, string task, string initialStatus, FrostyTaskCallback callback, bool showCancelButton = false, FrostyTaskCancelCallback cancelCallback = null)
         {
-            App.Logger.Log("Showing new Frosty window");
-
             FrostyTaskWindow win = new FrostyTaskWindow(owner, task, initialStatus, callback, showCancelButton, cancelCallback);
-
-            App.Logger.Log("FrostyTaskWindow created");
 
             win.ShowDialog();
         }

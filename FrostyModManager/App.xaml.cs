@@ -27,11 +27,7 @@ namespace FrostyModManager
 
         public static string Version = "";
 
-        public static bool LaunchGameImmediately 
-        { 
-            get => launchGameImmediately;
-            set => launchGameImmediately = value;
-        }
+        public static bool LaunchGameImmediately { get; set; }
 
         public static string LaunchGame { get; private set; }
         public static string LaunchProfile { get; private set; }
@@ -43,8 +39,6 @@ namespace FrostyModManager
         private FrostyConfiguration defaultConfig = null;
 
         private Config ini = new Config();
-
-        private static bool launchGameImmediately;
 
         public App()
         {
@@ -218,7 +212,7 @@ namespace FrostyModManager
                     }
 
                     LaunchGame = e.Args[1];
-                    launchGameImmediately = true;
+                    LaunchGameImmediately = true;
                     LaunchProfile = e.Args[3];
 
                     for (int i = 4; i < e.Args.Length; i++)
