@@ -2,6 +2,7 @@
 using Frosty.Core;
 using Frosty.Core.Mod;
 using Frosty.Hash;
+using FrostyModManager;
 using FrostySdk;
 using FrostySdk.Interfaces;
 using FrostySdk.IO;
@@ -1274,7 +1275,11 @@ namespace Frosty.ModSupport
                     Logger.Log("Creating symlinks");
                     App.Logger.Log("Creating symlinks");
 
-                    //FrostyMessageBox.Show(reason + "\r\n\r\nShortly you will be prompted for elevated privileges, this is required to create symbolic links between the original data and the new modified data. Please ensure that you accept this to avoid any issues.", "Frosty Toolsuite");
+                    if (!OperatingSystemHelper.IsWine())
+                    {
+                        FrostyMessageBox.Show(reason + "\r\n\r\nShortly you will be prompted for elevated privileges, this is required to create symbolic links between the original data and the new modified data. Please ensure that you accept this to avoid any issues.", "Frosty Toolsuite");
+                    }
+
                     if (!RunSymbolicLinkProcess(cmdArgs))
                     {
                         FrostyMessageBox.Show("Frosty needs to generate symbolic links, but it encountered an issue. Please try again.", "Frosty Editor");
@@ -2165,6 +2170,42 @@ namespace Frosty.ModSupport
 
         private bool RunSymbolicLinkProcess(List<SymLinkStruct> cmdArgs)
         {
+            if (OperatingSystemHelper.IsWine())
+            {
+                CreateHardLinksStructure(cmdArgs);
+            }
+            else
+            {
+                CreateSoftLinksStructure(cmdArgs);
+            }
+
+            // validate
+            foreach (SymLinkStruct arg in cmdArgs)
+            {
+                if ((arg.isFolder && !Directory.Exists(arg.dest)) || (!arg.isFolder && !File.Exists(arg.dest)))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private void CreateSoftLinksStructure(List<SymLinkStruct> cmdArgs)
+        {
+            using (TextWriter writer = new StreamWriter(new FileStream(AppDomain.CurrentDomain.BaseDirectory + "\\run.bat", FileMode.Create)))
+            {
+                foreach (SymLinkStruct arg in cmdArgs)
+                    writer.WriteLine("mklink" + ((arg.isFolder) ? "/D " : " ") + "\"" + arg.dest + "\" \"" + arg.src + "\"");
+            }
+
+            // create data and update symbolic links
+            ExecuteProcess("cmd.exe", "/C \"" + AppDomain.CurrentDomain.BaseDirectory + "\\run.bat\"", true, true);
+
+            // delete batch
+            File.Delete("run.bat");
+        }
+
+        private void CreateHardLinksStructure(List<SymLinkStruct> cmdArgs)
+        {
             foreach (SymLinkStruct arg in cmdArgs)
             {
                 try
@@ -2180,15 +2221,6 @@ namespace Frosty.ModSupport
                 }
                 catch { }
             }
-
-            // validate
-            foreach (SymLinkStruct arg in cmdArgs)
-            {
-                if ((arg.isFolder && !Directory.Exists(arg.dest)) || (!arg.isFolder && !File.Exists(arg.dest)))
-                    return false;
-            }
-
-            return true;
         }
 
         private static void CloneDirectory(string root, string dest)

@@ -172,6 +172,7 @@
     <Compile Include="Mod\RuntimeEbxResource.cs" />
     <Compile Include="Mod\RuntimeResources.cs" />
     <Compile Include="Mod\RuntimeResResource.cs" />
+    <Compile Include="OperatingSystemHelper.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="PluginLoadStatus.cs" />
     <Compile Include="PluginLoadType.cs" />
