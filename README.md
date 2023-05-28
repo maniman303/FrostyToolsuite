@@ -3,6 +3,7 @@ The most advanced modding platform for games running on DICE's Frostbite game en
 
 ## maniman303-Fork
 - Symlink fixed on Linux. When program is launched through Wine instead of using softlinks it will now use hardlinks. Behaviour on Windows is unchanged.
+- Disabled drag and drop mod installation when mod manager is run through Wine, as it had 75% chance of freezing the program. On Windows behaviour is unchanged.
 - Only tested mod manager, editor might still have issues.
 - Fixed building plugins when path to project contains spaces - xcopy scripts were pissing proper formatting.
 - Added new launch parameter to create direct-to-game shortcuts. Use it like this `FrostyModManager.exe -game MassEffectAndromeda -launch Default`. First option is game id and second is the profile to be used.
