@@ -130,9 +130,9 @@ namespace FrostyModManager.Windows
             if (App.LaunchGameImmediately)
             {
                 win.WindowStyle = WindowStyle.None;
+                win.WindowState = WindowState.Minimized;
                 win.Height = 0;
                 win.Width = 0;
-                win.ShowInTaskbar = false;
                 win.ShowActivated = false;
             }
 

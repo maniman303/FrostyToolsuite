@@ -295,6 +295,18 @@ namespace FrostyModManager
 
             tabContent.HeaderControl = tabControl;
             availableModsTabContent.HeaderControl = availableModsTabControl;
+
+            StateChanged += MainWindow_StateChanged;
+        }
+
+        private void MainWindow_StateChanged(object sender, EventArgs e)
+        {
+            if (WindowStyle == WindowStyle.None && WindowState != WindowState.Minimized)
+            {
+                WindowStyle = WindowStyle.SingleBorderWindow;
+                Height = double.NaN;
+                Width = double.NaN;
+            }
         }
 
         private void FrostyWindow_FrostyLoaded(object sender, EventArgs e)
@@ -444,7 +456,6 @@ namespace FrostyModManager
                     WindowStyle = WindowStyle.SingleBorderWindow;
                     Height = double.NaN;
                     Width = double.NaN;
-                    ShowInTaskbar = true;
 
                     FrostyMessageBox.Show(string.Format("Unable to find pack with name {0}. Launch request cancelled", App.LaunchProfile), "Frosty Mod Manager");
                     App.LaunchGameImmediately = false;
@@ -694,7 +705,6 @@ namespace FrostyModManager
             WindowStyle = WindowStyle.SingleBorderWindow;
             Height = double.NaN;
             Width = double.NaN;
-            ShowInTaskbar = true;
             ShowActivated = true;
 
             Show();

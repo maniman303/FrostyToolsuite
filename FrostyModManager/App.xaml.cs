@@ -204,7 +204,7 @@ namespace FrostyModManager
                         return;
                     }
 
-                    if (e.Args[2].ToLower() != "-launch")
+                    if (e.Args[2].ToLower() != "-launch" && e.Args[2].ToLower() != "-profile")
                     {
                         FrostyMessageBox.Show("-launch argument missing for game profile", "Frosty Mod Manager");
                         Current.Shutdown();
