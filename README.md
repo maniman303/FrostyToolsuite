@@ -17,7 +17,7 @@ The most advanced modding platform for games running on DICE's Frostbite game en
 Well, I wont create any 100% guarantee tutorial as I don't have skill or time for that unfortunately, but I can share how I've setup this version of Frosty Mod Manager on my Steam Deck with Mass Effect Andromeda bought on Steam. For alternative you could try using Steam Tinker Launch.
 1. Install the game via Steam.
 2. Copy game files to the safe location like `/home/Games/Mass Effect Andromeda`.
-3. Download dlls from [here](https://github.com/zeroKilo/MEAExplorerWV/tree/master/AnselSDK64/Release) and place them next to game exe file.
+3. Download dlls from [here](https://github.com/zeroKilo/MEAExplorerWV/tree/master/AnselSDK64/Release) and place them next to the game exe file, without them mods won't be loaded (Koaloader doesn't seem to work on Linux).
 4. Quack the game - you will loose online functionality, but also you will gain offline playability.
 5. (Optional) Uninstall game from Steam.
 6. Install patched Frosty Mod Manager also in the safe location, like `/home/Games/Frosty Mod Manager`.
