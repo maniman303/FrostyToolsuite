@@ -239,7 +239,16 @@ namespace Frosty.Core
             get
             {
                 if (scope == ConfigScope.Game || scope == ConfigScope.Pack)
-                    return Games[profile ?? ProfilesLibrary.ProfileName][option, scope]; // indexer will return null if not found
+                {
+                    var profileName = profile ?? ProfilesLibrary.ProfileName;
+
+                    if (!Games.ContainsKey(profileName))
+                    {
+                        return null;
+                    }
+
+                    return Games[profileName][option, scope];
+                }
 
                 return GlobalOptions.ContainsKey(option) ? GlobalOptions[option] : null;
             }

@@ -294,6 +294,12 @@ namespace FrostyModManager
 
             tabContent.HeaderControl = tabControl;
             availableModsTabContent.HeaderControl = availableModsTabControl;
+
+            if (OperatingSystemHelper.IsWine())
+            {
+                launchButton.Visibility = Visibility.Collapsed;
+                launchButton.IsEnabled = false;
+            }
         }
 
         private void FrostyWindow_FrostyLoaded(object sender, EventArgs e)
@@ -681,6 +687,79 @@ namespace FrostyModManager
             updateAppliedModButtons();
         }
 
+        private void installButton_Click(object sender, RoutedEventArgs e)
+        {
+            Config.Save();
+
+            // initialize
+            Frosty.Core.App.FileSystem = new FileSystem(Config.Get<string>("GamePath", "", ConfigScope.Game));
+            //FileSystem fs = new FileSystem(Config.Get<string>("Init", "GamePath", ""));
+            foreach (FileSystemSource source in ProfilesLibrary.Sources)
+                Frosty.Core.App.FileSystem.AddSource(source.Path, source.SubDirs);
+            Frosty.Core.App.FileSystem.Initialize();
+
+            // Set selected pack
+            App.SelectedPack = selectedPack.Name;
+
+            // get all applied mods
+            List<string> modPaths = new List<string>();
+            foreach (FrostyAppliedMod mod in selectedPack.AppliedMods)
+            {
+                if (mod.IsFound && mod.IsEnabled)
+                    modPaths.Add(mod.Mod.Filename);
+            }
+
+            // combine stored args with launch args
+            string additionalArgs = Config.Get<string>("CommandLineArgs", "", ConfigScope.Game) + " ";
+            //string additionalArgs = Config.Get<string>("Init", "AdditionalArgs", "") + " ";
+            additionalArgs += App.LaunchArgs;
+
+            // setup ability to cancel the process
+            CancellationTokenSource cancelToken = new CancellationTokenSource();
+
+            // launch
+            int retCode = 0;
+            FrostyTaskWindow.Show("Installing mods", "", (task) =>
+            {
+                try
+                {
+                    foreach (var executionAction in App.PluginManager.ExecutionActions)
+                        executionAction.PreLaunchAction(task.TaskLogger, PluginManagerType.ModManager, cancelToken.Token);
+
+                    FrostyModExecutor modExecutor = new FrostyModExecutor();
+                    retCode = modExecutor.Install(fs, cancelToken.Token, task.TaskLogger, modsDir.FullName, App.SelectedPack, modPaths.ToArray());
+
+                    foreach (var executionAction in App.PluginManager.ExecutionActions)
+                        executionAction.PostLaunchAction(task.TaskLogger, PluginManagerType.ModManager, cancelToken.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    retCode = -1;
+
+                    foreach (var executionAction in App.PluginManager.ExecutionActions)
+                        executionAction.PostLaunchAction(task.TaskLogger, PluginManagerType.ModManager, cancelToken.Token);
+
+                    // process was cancelled
+                    App.Logger.Log("Launch Cancelled");
+                }
+
+            }, showCancelButton: true, cancelCallback: (task) => cancelToken.Cancel());
+
+            if (retCode == 0)
+            {
+                var arguments = $"-dataPath \"ModData/{App.SelectedPack}\"\n";
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append("To launch the game with mods add these arguments in Steam or EA App to Launch Options:\r\n\r\n");
+                sb.Append(arguments);
+
+                FrostyMessageBox.Show(sb.ToString(), "Mods installed successfully");
+            }
+
+            GC.Collect();
+        }
+
         private void launchButton_Click(object sender, RoutedEventArgs e)
         {
             Config.Save();
@@ -981,6 +1060,11 @@ namespace FrostyModManager
 
         private void FrostyWindow_Drop(object sender, DragEventArgs e)
         {
+            if (OperatingSystemHelper.IsWine())
+            {
+                return;
+            }
+
             if (e.Data.GetDataPresent(DataFormats.FileDrop, true))
             {
                 string[] filenames = (string[])e.Data.GetData(DataFormats.FileDrop, true);

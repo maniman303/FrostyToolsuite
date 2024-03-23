@@ -2,6 +2,7 @@
 using Frosty.Core;
 using Frosty.Core.Mod;
 using Frosty.Hash;
+using FrostyModManager;
 using FrostySdk;
 using FrostySdk.Interfaces;
 using FrostySdk.IO;
@@ -14,6 +15,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -1001,17 +1003,8 @@ namespace Frosty.ModSupport
             }
         }
 
-        public int Run(FileSystem inFs, CancellationToken cancelToken, ILogger inLogger, string rootPath, string modPackName, string additionalArgs, params string[] modPaths)
+        private int InstallMods(CancellationToken cancelToken, string rootPath, string modDataPath, string modPackName, params string[] modPaths)
         {
-            modDirName = "ModData\\" + modPackName;
-            cancelToken.ThrowIfCancellationRequested();
-
-            App.Logger.Log("Launching");
-
-            fs = inFs;
-            Logger = inLogger;
-
-            string modDataPath = fs.BasePath + modDirName + "\\";
             string patchPath = "Patch";
             if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa17 || ProfilesLibrary.DataVersion == (int)ProfileVersion.DragonAgeInquisition || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield4 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeed || ProfilesLibrary.DataVersion == (int)ProfileVersion.PlantsVsZombiesGardenWarfare2 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeedRivals)
                 patchPath = "Update\\Patch\\Data";
@@ -1127,7 +1120,7 @@ namespace Frosty.ModSupport
                     }
                     ReportProgress(currentMod++, modList.Count);
                 }
-                
+
                 Logger.Log("Applying Handlers");
                 App.Logger.Log("Applying Handlers");
 
@@ -1282,7 +1275,14 @@ namespace Frosty.ModSupport
                     if (newInstallation)
                         reason = "New installation detected.";
 
-                    FrostyMessageBox.Show(reason + "\r\n\r\nShortly you will be prompted for elevated privileges, this is required to create symbolic links between the original data and the new modified data. Please ensure that you accept this to avoid any issues.", "Frosty Toolsuite");
+                    Logger.Log("Creating symlinks");
+                    App.Logger.Log("Creating symlinks");
+
+                    if (!OperatingSystemHelper.IsWine())
+                    {
+                        FrostyMessageBox.Show(reason + "\r\n\r\nShortly you will be prompted for elevated privileges, this is required to create symbolic links between the original data and the new modified data. Please ensure that you accept this to avoid any issues.", "Frosty Toolsuite");
+                    }
+
                     if (!RunSymbolicLinkProcess(cmdArgs))
                     {
                         FrostyMessageBox.Show("Frosty needs to generate symbolic links, please ensure that you accept this so you don't have to regenerate ModData.", "Frosty Editor");
@@ -1457,7 +1457,7 @@ namespace Frosty.ModSupport
                         foreach (string bundleName in addedBundles[hash])
                             fs.AddManifestBundle(new ManifestBundleInfo() { hash = Fnv1.HashString(bundleName) });
                     }
-                    
+
                     Dictionary<string, List<ModBundleInfo>> tasks = new Dictionary<string, List<ModBundleInfo>>();
                     foreach (ModBundleInfo bundle in modifiedBundles.Values)
                     {
@@ -1613,7 +1613,7 @@ namespace Frosty.ModSupport
                         }
                     }
                 }
-                
+
                 cancelToken.ThrowIfCancellationRequested();
                 if (cmdArgs.Count > 0)
                 {
@@ -1625,7 +1625,7 @@ namespace Frosty.ModSupport
 
                 Logger.Log("Writing Archive Data");
                 App.Logger.Log("Writing Archive Data");
-                
+
                 int totalEntries = casData.GetEntryCount();
                 int currentEntry = 0;
                 ReportProgress(currentEntry, totalEntries);
@@ -1668,7 +1668,7 @@ namespace Frosty.ModSupport
 
                     ReportProgress(currentEntry++, totalEntries);
                 }
-                
+
                 cancelToken.ThrowIfCancellationRequested();
 
                 Logger.Log("Writing Manifest");
@@ -1792,8 +1792,9 @@ namespace Frosty.ModSupport
                     File.Delete(fs.BasePath + "bcrypt.dll");
 
                 // copy over new CryptBase
-                CopyFileIfRequired("ThirdParty/CryptBase.dll", fs.BasePath + "CryptBase.dll");
+                CopyFileIfRequired("ThirdParty/CryptBase.dll", fs.BasePath + "cryptbase.dll");
             }
+
             CopyFileIfRequired(fs.BasePath + "user.cfg", modDataPath + "user.cfg");
 
             // FIFA games require a fifaconfig workaround
@@ -1807,6 +1808,66 @@ namespace Frosty.ModSupport
                 }
 
                 CopyFileIfRequired("thirdparty/fifaconfig.exe", fs.BasePath + "FIFASetup\\fifaconfig.exe");
+            }
+
+            if (!OperatingSystemHelper.IsWine())
+            {
+                return 0;
+            }
+
+            // Linux fix
+            if (ProfilesLibrary.DataVersion == (int)ProfileVersion.MassEffectAndromeda)
+            {
+                CopyFileIfRequired("thirdparty/AnselSDK64_org.dll", fs.BasePath + "AnselSDK64_org.dll");
+                CopyFileIfRequired("thirdparty/AnselSDK64.dll", fs.BasePath + "AnselSDK64.dll");
+            }
+
+            return 0;
+        }
+
+        public int Install(FileSystem inFs, CancellationToken cancelToken, ILogger inLogger, string rootPath, string modPackName, params string[] modPaths)
+        {
+            modDirName = "ModData\\" + modPackName;
+            cancelToken.ThrowIfCancellationRequested();
+
+            App.Logger.Log("Launching");
+
+            fs = inFs;
+            Logger = inLogger;
+
+            string modDataPath = fs.BasePath + modDirName + "\\";
+
+            int installRes = InstallMods(cancelToken, rootPath, modDataPath, modPackName, modPaths);
+
+            if (installRes < 0)
+            {
+                return installRes;
+            }
+
+            Logger.Log("Mods installed.");
+            App.Logger.Log("Mods installed.");
+
+            GC.Collect();
+            return 0;
+        }
+
+        public int Run(FileSystem inFs, CancellationToken cancelToken, ILogger inLogger, string rootPath, string modPackName, string additionalArgs, params string[] modPaths)
+        {
+            modDirName = "ModData\\" + modPackName;
+            cancelToken.ThrowIfCancellationRequested();
+
+            App.Logger.Log("Launching");
+
+            fs = inFs;
+            Logger = inLogger;
+
+            string modDataPath = fs.BasePath + modDirName + "\\";
+
+            int installRes = InstallMods(cancelToken, rootPath, modDataPath, modPackName, modPaths);
+
+            if (installRes < 0)
+            {
+                return installRes;
             }
 
             // launch the game (redirecting to the modPath directory)
@@ -2214,6 +2275,20 @@ namespace Frosty.ModSupport
 
         private bool RunSymbolicLinkProcess(List<SymLinkStruct> cmdArgs)
         {
+            if (OperatingSystemHelper.IsWine() || true)
+            {
+                CreateHardLinksStructure(cmdArgs);
+            }
+            else
+            {
+                CreateSoftLinksStructure(cmdArgs);
+            }
+
+            return true;
+        }
+
+    private void CreateSoftLinksStructure(List<SymLinkStruct> cmdArgs)
+        {
             using (TextWriter writer = new StreamWriter(new FileStream(AppDomain.CurrentDomain.BaseDirectory + "\\run.bat", FileMode.Create)))
             {
                 foreach (SymLinkStruct arg in cmdArgs)
@@ -2224,19 +2299,46 @@ namespace Frosty.ModSupport
             ExecuteProcess("cmd.exe", "/C \"" + AppDomain.CurrentDomain.BaseDirectory + "\\run.bat\"", true, true);
 
             // delete batch
-            if (File.Exists("run.bat"))
-            {
-                File.Delete("run.bat");
-            }
+            File.Delete("run.bat");
+        }
 
-            // validate
+        private void CreateHardLinksStructure(List<SymLinkStruct> cmdArgs)
+        {
             foreach (SymLinkStruct arg in cmdArgs)
             {
-                if ((arg.isFolder && !Directory.Exists(arg.dest)) || (!arg.isFolder && !File.Exists(arg.dest)))
-                    return false;
+                try
+                {
+                    if (arg.isFolder)
+                    {
+                        CloneDirectory(arg.src, arg.dest);
+                    }
+                    else
+                    {
+                        CreateHardLink(arg.dest, arg.src, IntPtr.Zero);
+                    }
+                }
+                catch { }
+            }
+        }
+
+        private static void CloneDirectory(string root, string dest)
+        {
+            Directory.CreateDirectory(dest);
+
+            foreach (var directory in Directory.GetDirectories(root))
+            {
+                //Get the path of the new directory
+                var newDirectory = Path.Combine(dest, Path.GetFileName(directory));
+                //Create the directory if it doesn't already exist
+                Directory.CreateDirectory(newDirectory);
+                //Recursively clone the directory
+                CloneDirectory(directory, newDirectory);
             }
 
-            return true;
+            foreach (var file in Directory.GetFiles(root))
+            {
+                CreateHardLink(Path.Combine(dest, Path.GetFileName(file)), file, IntPtr.Zero);
+            }
         }
 
         public static void ExecuteProcess(string processName, string args, bool waitForExit = false, bool asAdmin = false, Dictionary<string, string> env = null)
@@ -2301,5 +2403,12 @@ namespace Frosty.ModSupport
                     File.Copy(baseFi.FullName, modFi.FullName, true);
             }
         }
+
+        [DllImport("Kernel32.dll", CharSet = CharSet.Unicode)]
+        static extern bool CreateHardLink(
+            string lpFileName,
+            string lpExistingFileName,
+            IntPtr lpSecurityAttributes
+        );
     }
 }

@@ -159,9 +159,15 @@ namespace Frosty.Core.Windows
             });
         }
 
-        public static void Show(Window owner, string task, string initialStatus, FrostyTaskCallback callback, bool showCancelButton = false, FrostyTaskCancelCallback cancelCallback = null)
+        public static void Show(Window owner, string task, string initialStatus, FrostyTaskCallback callback, bool showCancelButton = false, FrostyTaskCancelCallback cancelCallback = null, string cancelButtonName = null)
         {
             FrostyTaskWindow win = new FrostyTaskWindow(owner, task, initialStatus, callback, showCancelButton, cancelCallback);
+
+            if (!string.IsNullOrEmpty(cancelButtonName))
+            {
+                
+            }
+
             win.ShowDialog();
         }
 

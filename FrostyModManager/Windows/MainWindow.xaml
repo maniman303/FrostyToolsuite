@@ -393,6 +393,27 @@
                                 </Button>
                             </StackPanel>
                         </Border>
+                        <!-- Install -->
+                        <Border Background="{StaticResource ControlBackground}"
+                                Margin="1 0 0 0"
+                                DockPanel.Dock="Left"
+                                RenderOptions.EdgeMode="Aliased">
+                            <StackPanel VerticalAlignment="Center"
+                                    Orientation="Horizontal"
+                                    Margin="6,0,6,0">
+                                <Button x:Name="installButton"
+                                        Height="20"
+                                        ToolTip="Install applied mods"
+                                        Click="installButton_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Source="/FrostyModManager;component/Images/Down.png" />
+                                        <TextBlock Margin="2,0,3,2"
+                                           Text="Install mods"
+                                           VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
                         <!-- Filler -->
                         <Border Background="Transparent"
                                 Margin="1,0,0,0"

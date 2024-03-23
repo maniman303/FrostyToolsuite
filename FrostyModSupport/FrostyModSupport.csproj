@@ -109,6 +109,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="ThirdParty\AnselSDK64.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ThirdParty\AnselSDK64_org.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="ThirdParty\CryptBase.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
