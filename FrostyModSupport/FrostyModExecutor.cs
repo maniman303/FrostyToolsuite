@@ -1791,8 +1791,16 @@ namespace Frosty.ModSupport
                 if (File.Exists(fs.BasePath + "bcrypt.dll"))
                     File.Delete(fs.BasePath + "bcrypt.dll");
 
-                // copy over new CryptBase
-                CopyFileIfRequired("ThirdParty/CryptBase.dll", fs.BasePath + "cryptbase.dll");
+                if (OperatingSystemHelper.IsWine())
+                {
+                    CopyFileIfRequired("ThirdParty/koaloader.dll", fs.BasePath + "version.dll");
+                    CopyFileIfRequired("ThirdParty/crypthook.dll", fs.BasePath + "crypthook.dll");
+                    CopyFileIfRequired("ThirdParty/Koaloader.config.json", fs.BasePath + "Koaloader.config.json");
+                }
+                else
+                {
+                    CopyFileIfRequired("ThirdParty/CryptBase.dll", fs.BasePath + "cryptbase.dll");
+                }
             }
 
             CopyFileIfRequired(fs.BasePath + "user.cfg", modDataPath + "user.cfg");
@@ -1813,13 +1821,6 @@ namespace Frosty.ModSupport
             if (!OperatingSystemHelper.IsWine())
             {
                 return 0;
-            }
-
-            // Linux fix
-            if (ProfilesLibrary.DataVersion == (int)ProfileVersion.MassEffectAndromeda)
-            {
-                CopyFileIfRequired("thirdparty/AnselSDK64_org.dll", fs.BasePath + "AnselSDK64_org.dll");
-                CopyFileIfRequired("thirdparty/AnselSDK64.dll", fs.BasePath + "AnselSDK64.dll");
             }
 
             return 0;
@@ -2275,7 +2276,7 @@ namespace Frosty.ModSupport
 
         private bool RunSymbolicLinkProcess(List<SymLinkStruct> cmdArgs)
         {
-            if (OperatingSystemHelper.IsWine() || true)
+            if (OperatingSystemHelper.IsWine())
             {
                 CreateHardLinksStructure(cmdArgs);
             }

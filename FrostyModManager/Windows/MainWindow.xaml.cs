@@ -751,8 +751,16 @@ namespace FrostyModManager
 
                 StringBuilder sb = new StringBuilder();
 
-                sb.Append("To launch the game with mods add these arguments in Steam or EA App to Launch Options:\r\n\r\n");
-                sb.Append(arguments);
+                if (OperatingSystemHelper.IsWine())
+                {
+                    sb.Append("To launch the game with mods use this Launch Options in Steam:\r\n\r\n");
+                    sb.Append($"WINEDLLOVERRIDES=\"version=n,b\" %command% {arguments}");
+                }
+                else
+                {
+                    sb.Append("To launch the game with mods add these arguments in Steam or EA App to Launch Options:\r\n\r\n");
+                    sb.Append(arguments);
+                }
 
                 FrostyMessageBox.Show(sb.ToString(), "Mods installed successfully");
             }

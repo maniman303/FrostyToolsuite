@@ -1,0 +1,12 @@
+{
+  "logging": true,
+  "enabled": true,
+  "auto_load": false,
+  "targets": [],
+  "modules": [
+	{
+      "path": "crypthook.dll",
+      "required": true
+    }
+  ]
+}
