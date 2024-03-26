@@ -3,6 +3,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
+using System;
 
 namespace Frosty.Core
 {
@@ -24,17 +26,21 @@ namespace Frosty.Core
             ProfileName = profile;
             GamePath = Config.Get<string>("GamePath", "", ConfigScope.Game, profile);
 
-            FileVersionInfo vi = FileVersionInfo.GetVersionInfo(System.IO.Path.Combine(GamePath, ProfileName) + ".exe");
+            var exeLocation = System.IO.Path.Combine(GamePath, ProfileName) + ".exe";
+
+            FileVersionInfo vi = FileVersionInfo.GetVersionInfo(exeLocation);
             GameName = vi.ProductName;
 
             // Try to extract the icon
             try
             {
-                Icon sysicon = Icon.ExtractAssociatedIcon(System.IO.Path.Combine(GamePath, ProfileName) + ".exe");
+                Icon sysicon = GetFileIcon(exeLocation);
+
                 Thumbnail = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(
                     sysicon.Handle,
-                    Int32Rect.Empty,
+                    new Int32Rect(0, 0, 32, 32),
                     BitmapSizeOptions.FromEmptyOptions());
+
                 sysicon.Dispose();
             }
             catch
@@ -42,5 +48,46 @@ namespace Frosty.Core
 
             }
         }
+
+        private Icon GetFileIcon(string name)
+        {
+            SHFILEINFO shfi = new SHFILEINFO();
+            uint flags = 0x000000100 | 0x000000010 | 0x000000000;
+
+            SHGetFileInfo(
+                name,
+                0x00000080,
+                ref shfi,
+                (uint)Marshal.SizeOf(shfi),
+                flags);
+
+            // Copy (clone) the returned icon to a new object, thus allowing us 
+            // to call DestroyIcon immediately
+            Icon icon = (Icon) Icon.FromHandle(shfi.hIcon).Clone();
+
+            return icon;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SHFILEINFO
+        {
+            public const int NAMESIZE = 80;
+            public IntPtr hIcon;
+            public int iIcon;
+            public uint dwAttributes;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 60)]
+            public string szDisplayName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = NAMESIZE)]
+            public string szTypeName;
+        };
+
+        [DllImport("Shell32.dll")]
+        public static extern IntPtr SHGetFileInfo(
+            string pszPath,
+            uint dwFileAttributes,
+            ref SHFILEINFO psfi,
+            uint cbFileInfo,
+            uint uFlags
+        );
     }
 }
