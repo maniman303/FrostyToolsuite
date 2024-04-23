@@ -1,5 +1,27 @@
-# FrostyToolsuite
+# FrostyToolsuite Linux version
 The most advanced modding platform for games running on DICE's Frostbite game engine.
+
+Uses [Koaloader](https://github.com/acidicoala/Koaloader) and [CryptHook](https://github.com/maniman303/CryptHook).
+
+## Changes in Linux version
+
+- Fixed mod deployment.
+- Fixed game icons.
+- Added `Install mods` button.
+- Fixed `BCryptVerifySignature` patching with [Koaloader](https://github.com/acidicoala/Koaloader) and [CryptHook](https://github.com/maniman303/CryptHook).
+- Disabled mods drag and drop (broken on Linux).
+- Disabled auto update.
+
+## Linux and Steam guide
+
+- Install Bottles from Flatpak.
+- Make sure Bottles have access to game directory (you can add it with Flatseal).
+- Create a new application bottle, use latest soda or wine-ge runner (proton-ge is not suggested).
+- If you are NOT using Proton make sure to install wine mono in bottle dependencies.
+- Add FrostyModManager to shortcuts in the bottle, launch it.
+- Add game exe manually. Scanning for games won't work unless you export registry entries from Proton prefix.
+- Add mods with `Add mod` button, install mods with `Install mods` button.
+- After mods installation take note of launch options provided by manager, add these options to the Steam game under game properties.
 
 ## Setup
 
