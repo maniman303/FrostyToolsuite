@@ -12,6 +12,10 @@ Uses [Koaloader](https://github.com/acidicoala/Koaloader) and [CryptHook](https:
 - Disabled mods drag and drop (broken on Linux).
 - Disabled auto update.
 
+## Required setup on Linux
+- Download latest [Koaloader](https://github.com/acidicoala/Koaloader/releases) release.
+- Find `version.dll` under version-64, rename it to `koaloader.dll`, copy file to FrostyModManager/ThirdParty folder.
+
 ## Linux and Steam guide
 
 - Install Bottles from Flatpak.
