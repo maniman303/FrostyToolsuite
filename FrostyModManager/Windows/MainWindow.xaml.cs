@@ -748,26 +748,45 @@ namespace FrostyModManager
             if (retCode == 0)
             {
                 var arguments = $"-dataPath \"ModData/{App.SelectedPack}\"";
+                var clipBoardArgs = arguments;
 
                 StringBuilder sb = new StringBuilder();
+
 
                 if (OperatingSystemHelper.IsWine())
                 {
                     var linuxArguments = $"WINEDLLOVERRIDES=\"version=n,b\" %command% {arguments}";
 
-                    Clipboard.SetText(linuxArguments);
+                    clipBoardArgs = linuxArguments;
 
                     sb.Append("To launch the game with mods use this Launch Options in Steam:\r\n\r\n");
                     sb.Append(linuxArguments);                    
                 }
                 else
                 {
-                    Clipboard.SetText(arguments);
                     sb.Append("To launch the game with mods add these arguments in Steam or EA App to Launch Options:\r\n\r\n");
                     sb.Append(arguments);
                 }
 
-                sb.Append("\r\n\r\nLaunch Options were copied to clipboard.");
+                var clipboardSuccess = true;
+
+                try
+                {
+                    Clipboard.SetText(clipBoardArgs);
+                }
+                catch (Exception)
+                {
+                    clipboardSuccess = false;
+                }
+
+                if (clipboardSuccess)
+                {
+                    sb.Append("\r\n\r\nLaunch Options were copied to clipboard.");
+                }
+                else
+                {
+                    sb.Append("\r\n\r\nError happened while coping options to clipboard. Try to install mods again or write them manually.");
+                }
 
                 FrostyMessageBox.Show(sb.ToString(), "Mods installed successfully");
             }

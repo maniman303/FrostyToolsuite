@@ -15,7 +15,7 @@
                    Icon="/FrostyModManager;component/AppIcon.ico"
                    FrostyLoaded="FrostyWindow_FrostyLoaded"
                    Closing="FrostyWindow_Closing"
-                   AllowDrop="True"
+                   AllowDrop="False"
                    Drop="FrostyWindow_Drop">
     <ctrl:FrostyWindow.Resources>
         <conv:BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter" />

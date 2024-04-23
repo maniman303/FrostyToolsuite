@@ -114,8 +114,9 @@ namespace FrostyModManager
             Config.Load();
             //ini.LoadEntries("DefaultSettings.ini");
 
-            if (Config.Get<bool>("UpdateCheck", true) || Config.Get<bool>("UpdateCheckPrerelease", false))
-                CheckVersion();
+            // Disable update check
+            //if (Config.Get<bool>("UpdateCheck", true) || Config.Get<bool>("UpdateCheckPrerelease", false))
+            //    CheckVersion();
 
             //string defaultConfigname = ini.GetEntry("Init", "DefaultConfiguration", "");
 
