@@ -752,7 +752,6 @@ namespace FrostyModManager
 
                 StringBuilder sb = new StringBuilder();
 
-
                 if (OperatingSystemHelper.IsWine())
                 {
                     var linuxArguments = $"WINEDLLOVERRIDES=\"version=n,b\" %command% {arguments}";
@@ -789,6 +788,14 @@ namespace FrostyModManager
                 }
 
                 FrostyMessageBox.Show(sb.ToString(), "Mods installed successfully");
+            }
+            else if (retCode == 6)
+            {
+                FrostyMessageBox.Show("Mods installation failed due to missing 'koaloader.dll' file in 'ThirdParty' folder.\r\nPlease follow the FrostyModManager Linux Patch installation guide.", "Mods installation failed");
+            }
+            else
+            {
+                FrostyMessageBox.Show("Mods installation failed due to unknown error.\r\n", "Mods installation failed");
             }
 
             GC.Collect();
