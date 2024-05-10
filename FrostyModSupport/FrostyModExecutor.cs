@@ -1793,14 +1793,8 @@ namespace Frosty.ModSupport
 
                 if (OperatingSystemHelper.IsWine())
                 {
-                    if (!VerifyKoaloader())
-                    {
-                        return 6;
-                    }
-
-                    CopyFileIfRequired("ThirdParty/koaloader.dll", fs.BasePath + "version.dll");
+                    CopyFileIfRequired("ThirdParty/version.dll", fs.BasePath + "version.dll");
                     CopyFileIfRequired("ThirdParty/crypthook.dll", fs.BasePath + "crypthook.dll");
-                    CopyFileIfRequired("ThirdParty/Koaloader.config.json", fs.BasePath + "Koaloader.config.json");
                 }
                 else
                 {
@@ -2396,13 +2390,6 @@ namespace Frosty.ModSupport
                 reader.Position = offset;
                 return reader.ReadBytes(size);
             }
-        }
-
-        private bool VerifyKoaloader()
-        {
-            var koaloaderFile = new FileInfo("ThirdParty/koaloader.dll");
-
-            return koaloaderFile.Exists;
         }
 
         private void CopyFileIfRequired(string source, string dest)
