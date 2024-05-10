@@ -1,20 +1,16 @@
 # FrostyToolsuite Linux version
 The most advanced modding platform for games running on DICE's Frostbite game engine.
 
-Uses [Koaloader](https://github.com/acidicoala/Koaloader) and [CryptHook](https://github.com/maniman303/CryptHook).
+Uses [VersionProxy](https://github.com/maniman303/frosty-version-proxy) and [CryptHook](https://github.com/maniman303/CryptHook).
 
 ## Changes in Linux version
 
 - Fixed mod deployment.
 - Fixed game icons.
 - Added `Install mods` button.
-- Fixed `BCryptVerifySignature` patching with [Koaloader](https://github.com/acidicoala/Koaloader) and [CryptHook](https://github.com/maniman303/CryptHook).
+- Fixed `BCryptVerifySignature` patching with [VersionProxy](https://github.com/maniman303/frosty-version-proxy) and [CryptHook](https://github.com/maniman303/CryptHook).
 - Disabled mods drag and drop (broken on Linux).
 - Disabled auto update.
-
-## Required setup on Linux
-- Download latest [Koaloader](https://github.com/acidicoala/Koaloader/releases) release.
-- Find `version.dll` under version-64, rename it to `koaloader.dll`, copy file to FrostyModManager/ThirdParty folder.
 
 ## Linux and Steam guide
 
