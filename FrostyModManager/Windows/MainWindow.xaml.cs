@@ -769,15 +769,17 @@ namespace FrostyModManager
 
                 var clipboardSuccess = true;
 
-                try
+                for (int i = 0; i < 20; i++)
                 {
-                    Clipboard.SetText(clipBoardArgs);
-                }
-                catch (Exception)
-                {
+                    clipboardSuccess = true;
+
                     try
                     {
                         Clipboard.SetText(clipBoardArgs);
+                        
+                        clipboardSuccess = true;
+                        i = 99;
+                        break;
                     }
                     catch (Exception)
                     {
