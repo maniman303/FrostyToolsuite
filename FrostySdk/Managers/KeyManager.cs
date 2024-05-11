@@ -6,7 +6,20 @@ namespace FrostySdk.Managers
     {
         private Dictionary<string, byte[]> keys = new Dictionary<string, byte[]>();
 
-        public static KeyManager Instance { get; } = new KeyManager();
+        private static KeyManager _instance = null;
+
+        public static KeyManager Instance
+        { 
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new KeyManager();
+                }
+
+                return _instance;
+            }
+        }
 
         private KeyManager()
         {

@@ -9,6 +9,7 @@ using FrostySdk.Managers;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -72,7 +73,6 @@ namespace FrostyModManager.Windows
             }
 
             Config.Save();
-            //Config.Save(App.configFilename);
 
             profileTextBlock.Text = ProfilesLibrary.DisplayName;
             bannerImage.Source = LoadBanner(ProfilesLibrary.Banner);
@@ -130,6 +130,23 @@ namespace FrostyModManager.Windows
             win.Show();
 
             Close();
+        }
+
+        private string ByteToString(byte[] bytes)
+        {
+            if (bytes == null)
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder();
+
+            foreach ( byte b in bytes )
+            {
+                sb.Append(b);
+            }
+
+            return sb.ToString();
         }
 
         private BitmapImage LoadBanner(byte[] banner)

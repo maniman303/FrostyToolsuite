@@ -1057,6 +1057,17 @@ namespace Frosty.ModSupport
             cancelToken.ThrowIfCancellationRequested();
             if (needsModding)
             {
+                bool newInstallation = false;
+
+                if (!Directory.Exists(modDataPath))
+                {
+                    newInstallation = true;
+                }
+                else if (OperatingSystemHelper.IsWine())
+                {
+                    Directory.Delete(modDataPath, true);
+                }
+
                 cancelToken.ThrowIfCancellationRequested();
                 Logger.Log("Initializing Resources");
 
@@ -1153,14 +1164,12 @@ namespace Frosty.ModSupport
                 App.Logger.Log("Cleaning Up ModData");
 
                 List<SymLinkStruct> cmdArgs = new List<SymLinkStruct>();
-                bool newInstallation = false;
 
                 fs.ResetManifest();
                 if (!DeleteSelectFiles(modDataPath + patchPath))
                 {
                     if (!Directory.Exists(modDataPath))
                     {
-                        newInstallation = true;
                         Logger.Log("Creating ModData");
 
                         // create mod path
