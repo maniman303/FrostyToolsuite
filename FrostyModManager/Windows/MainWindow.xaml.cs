@@ -775,7 +775,14 @@ namespace FrostyModManager
                 }
                 catch (Exception)
                 {
-                    clipboardSuccess = false;
+                    try
+                    {
+                        Clipboard.SetText(clipBoardArgs);
+                    }
+                    catch (Exception)
+                    {
+                        clipboardSuccess = false;
+                    }
                 }
 
                 if (clipboardSuccess)

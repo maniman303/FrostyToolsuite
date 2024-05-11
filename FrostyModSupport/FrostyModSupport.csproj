@@ -112,9 +112,7 @@
     <Content Include="ThirdParty\CryptBase.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="ThirdParty\crypthook.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="ThirdParty\crypthook.dll" />
     <Content Include="ThirdParty\fifaconfig.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
