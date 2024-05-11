@@ -1789,11 +1789,14 @@ namespace Frosty.ModSupport
             {
                 // delete old useless bcrypt
                 if (File.Exists(fs.BasePath + "bcrypt.dll"))
+                {
                     File.Delete(fs.BasePath + "bcrypt.dll");
+                }
 
                 if (OperatingSystemHelper.IsWine())
                 {
                     CopyFileIfRequired("ThirdParty/version.dll", fs.BasePath + "version.dll");
+                    CopyFileIfRequired("ThirdParty/winmm.dll", fs.BasePath + "winmm.dll");
                     CopyFileIfRequired("ThirdParty/crypthook.dll", fs.BasePath + "crypthook.dll");
                 }
                 else

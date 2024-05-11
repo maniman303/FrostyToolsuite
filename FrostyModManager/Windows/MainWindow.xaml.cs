@@ -754,7 +754,7 @@ namespace FrostyModManager
 
                 if (OperatingSystemHelper.IsWine())
                 {
-                    var linuxArguments = $"WINEDLLOVERRIDES=\"version=n,b\" %command% {arguments}";
+                    var linuxArguments = $"WINEDLLOVERRIDES=\"winmm=n,b\" %command% {arguments}";
 
                     clipBoardArgs = linuxArguments;
 
