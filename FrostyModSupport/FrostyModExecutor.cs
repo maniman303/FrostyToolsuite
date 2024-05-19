@@ -1063,7 +1063,7 @@ namespace Frosty.ModSupport
 
             var result = string.Empty;
 
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 70; i++)
             {
                 result = File.ReadAllText("linux_result");
 
@@ -1072,7 +1072,7 @@ namespace Frosty.ModSupport
                     break;
                 }
 
-                Thread.Sleep(250);
+                Thread.Sleep(30);
             }
 
             return !string.IsNullOrWhiteSpace(result);
@@ -2416,7 +2416,7 @@ namespace Frosty.ModSupport
                         break;
                     }
 
-                    Thread.Sleep(250);
+                    Thread.Sleep(30);
                 }
 
                 return;
@@ -2482,7 +2482,7 @@ namespace Frosty.ModSupport
                     break;
                 }
 
-                Thread.Sleep(250);
+                Thread.Sleep(30);
             }
         }
 
@@ -2603,7 +2603,7 @@ namespace Frosty.ModSupport
                     break;
                 }
 
-                Thread.Sleep(250);
+                Thread.Sleep(30);
             }
         }
 
@@ -2701,7 +2701,7 @@ namespace Frosty.ModSupport
                     break;
                 }
 
-                Thread.Sleep(250);
+                Thread.Sleep(30);
             }
 
             if (string.IsNullOrWhiteSpace(status))
