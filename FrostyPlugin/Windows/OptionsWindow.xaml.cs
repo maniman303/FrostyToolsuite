@@ -361,6 +361,12 @@ namespace Frosty.Core.Windows
         [DependsOn("UseCustomModsDirectory")]
         public string CustomModsDirectory { get; set; }
 
+        [Category("Manager")]
+        [DisplayName("Use HardLinks")]
+        [Description("Use HardLinks for mod installation")]
+        [EbxFieldMeta(EbxFieldType.Boolean)]
+        public bool UseHardLink { get; set; } = false;
+
         [Category("Update Checking")]
         [DisplayName("Check for Updates")]
         [Description("Check Github for Frosty updates on startup")]
@@ -406,6 +412,8 @@ namespace Frosty.Core.Windows
 
             CustomModsDirectory = Config.Get<string>("CustomModsDirectory", "");
 
+            UseHardLink = Config.Get<bool>("UseHardLink", false);
+
             UpdateCheck = Config.Get<bool>("UpdateCheck", true);
 
             UpdateCheckPrerelease = Config.Get<bool>("UpdateCheckPrerelease", false);
@@ -420,6 +428,7 @@ namespace Frosty.Core.Windows
 
         public override void Save()
         {
+            Config.Add("UseHardLink", UseHardLink);
             Config.Add("UseDefaultProfile", RememberChoice);
             Config.Add("CommandLineArgs", CommandLineArgs, ConfigScope.Game);
             Config.Add("DeleteCollectionMods", DeleteCollectionMods);

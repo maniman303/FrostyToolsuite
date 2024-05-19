@@ -807,6 +807,10 @@ namespace FrostyModManager
 
                 FrostyMessageBox.Show(sb.ToString(), "Mods installed successfully");
             }
+            else if (retCode == 5)
+            {
+                FrostyMessageBox.Show("Frosty had to update config in the registry, to enable symbolic links. Please restart the app.", "Restart required");
+            }
             else if (retCode == 6)
             {
                 FrostyMessageBox.Show("Mods installation failed due to missing 'koaloader.dll' file in 'ThirdParty' folder.\r\nPlease follow the FrostyModManager Linux Patch installation guide.", "Mods installation failed");
