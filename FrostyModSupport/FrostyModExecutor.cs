@@ -138,6 +138,13 @@ namespace Frosty.ModSupport
         }
 
         [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
+        private class ModSetup
+        {
+            public bool IsHardlink { get; set; } = false;
+            public List<ModInfo> ModInfos { get; set; } = new List<ModInfo>();
+        }
+
+        [JsonObject(NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
         private class ModInfo
         {
             public string Name { get; set; }
@@ -1053,16 +1060,37 @@ namespace Frosty.ModSupport
 
             bool needsModding = false;
             if (!File.Exists(Path.Combine(modDataPath, patchPath, "mods.json")))
+            {
                 needsModding = true;
+            }
             else
             {
-                List<ModInfo> oldModInfoList = JsonConvert.DeserializeObject<List<ModInfo>>(File.ReadAllText(Path.Combine(modDataPath, patchPath, "mods.json")));
-                List<ModInfo> currentModInfoList = GenerateModInfoList(modPaths, rootPath);
+                var modSetupJson = File.ReadAllText(Path.Combine(modDataPath, patchPath, "mods.json"));
+                var modSetup = new ModSetup();
+
+                try
+                {
+                    modSetup = JsonConvert.DeserializeObject<ModSetup>(modSetupJson);
+                }
+                catch
+                {
+                    needsModding = true;
+                }
+
+                if (!needsModding && modSetup.IsHardlink != ShouldUseHardLink())
+                {
+                    needsModding = true;
+                }
+
+                var oldModInfoList = modSetup.ModInfos;
+                var currentModInfoList = GenerateModInfoList(modPaths, rootPath);
 
                 // check if the mod data needs recreating
                 // ie. mod change or patch
-                if (!IsSamePatch(modDataPath + patchPath) || !oldModInfoList.SequenceEqual(currentModInfoList))
+                if (!needsModding && !IsSamePatch(modDataPath + patchPath) || !oldModInfoList.SequenceEqual(currentModInfoList))
+                {
                     needsModding = true;
+                }
             }
 
             cancelToken.ThrowIfCancellationRequested();
@@ -1792,7 +1820,14 @@ namespace Frosty.ModSupport
                 }
 
                 // create the frosty mod list file
-                File.WriteAllText(Path.Combine(modDataPath, patchPath, "mods.json"), JsonConvert.SerializeObject(GenerateModInfoList(modPaths, rootPath), Formatting.Indented));
+
+                var newModSetup = new ModSetup
+                {
+                    IsHardlink = ShouldUseHardLink(),
+                    ModInfos = GenerateModInfoList(modPaths, rootPath),
+                };
+
+                File.WriteAllText(Path.Combine(modDataPath, patchPath, "mods.json"), JsonConvert.SerializeObject(newModSetup, Formatting.Indented));
 
                 // stopwatch
                 watch.Stop();
