@@ -365,7 +365,7 @@ namespace Frosty.Core.Windows
         [DisplayName("Use HardLinks")]
         [Description("Use HardLinks for mod installation")]
         [EbxFieldMeta(EbxFieldType.Boolean)]
-        public bool UseHardLink { get; set; } = false;
+        public bool UseHardLink { get; set; } = true;
 
         [Category("Update Checking")]
         [DisplayName("Check for Updates")]
@@ -412,7 +412,7 @@ namespace Frosty.Core.Windows
 
             CustomModsDirectory = Config.Get<string>("CustomModsDirectory", "");
 
-            UseHardLink = Config.Get<bool>("UseHardLink", false);
+            UseHardLink = Config.Get<bool>("UseHardLink", true);
 
             UpdateCheck = Config.Get<bool>("UpdateCheck", true);
 

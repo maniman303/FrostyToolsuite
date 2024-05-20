@@ -1005,11 +1005,11 @@ namespace Frosty.ModSupport
             }
         }
 
-        private static bool UpdateRegistry()
+        private static void UpdateRegistry()
         {
             if (!OperatingSystemHelper.IsWine())
             {
-                return true;
+                return;
             }
 
             var valueObj = Registry.GetValue("HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Session Manager\\Environment", "PATHEXT", string.Empty);
@@ -1026,7 +1026,7 @@ namespace Frosty.ModSupport
             if (value == "." || value.Contains(".;") || value.EndsWith(";."))
             {
                 Log("Registry edit not needed.");
-                return true;
+                return;
             }
 
             if (value.EndsWith(";"))
@@ -1042,47 +1042,37 @@ namespace Frosty.ModSupport
 
             Log("Registry updated. Restart FrostyModManager.");
 
-            return false;
+            return;
         }
 
         private static bool TestRegistry()
         {
-            var proc = new Process
+            if (!OperatingSystemHelper.IsWine())
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c /bin/echo test > linux_result",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            proc.Start();
-            proc.WaitForExit();
-
-            var result = string.Empty;
-
-            for (int i = 0; i < 70; i++)
-            {
-                result = File.ReadAllText("linux_result");
-
-                if (!string.IsNullOrWhiteSpace(result))
-                {
-                    break;
-                }
-
-                Thread.Sleep(30);
+                return true;
             }
 
-            return !string.IsNullOrWhiteSpace(result);
+            File.Create("linux_temp");
+
+            try
+            {
+                IsSymbolicLinkLinux("linux_temp");
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private int InstallMods(CancellationToken cancelToken, string rootPath, string modDataPath, string modPackName, params string[] modPaths)
         {
             InitLog();
 
-            if (!UpdateRegistry() || !TestRegistry())
+            UpdateRegistry();
+
+            if (!TestRegistry())
             {
                 return 5;
             }
@@ -1145,7 +1135,7 @@ namespace Frosty.ModSupport
                 {
                     newInstallation = true;
                 }
-                else if (ShouldUseHardLink())
+                else if (ShouldCleanModDir(modDataPath))
                 {
                     DeleteDirectory(modDataPath);
                 }
@@ -1369,7 +1359,7 @@ namespace Frosty.ModSupport
                     Logger.Log("Creating symlinks");
                     App.Logger.Log("Creating symlinks");
 
-                    if (!OperatingSystemHelper.IsWine())
+                    if (!OperatingSystemHelper.IsWine() && !ShouldUseHardLink())
                     {
                         FrostyMessageBox.Show(reason + "\r\n\r\nShortly you will be prompted for elevated privileges, this is required to create symbolic links between the original data and the new modified data. Please ensure that you accept this to avoid any issues.", "Frosty Toolsuite");
                     }
@@ -1911,6 +1901,8 @@ namespace Frosty.ModSupport
                 CopyFileIfRequired("thirdparty/fifaconfig.exe", fs.BasePath + "FIFASetup\\fifaconfig.exe");
             }
 
+            Log("Mod installation finished.");
+
             if (!OperatingSystemHelper.IsWine())
             {
                 return 0;
@@ -2284,7 +2276,7 @@ namespace Frosty.ModSupport
                             FileInfo fi = new FileInfo(filename);
 
                             // delete if cas does not exist in base patch OR is not a symbolic link
-                            if (!File.Exists(basePatchCatalog + "/" + fi.Name) || !IsSymbolicLink(fi))
+                            if (!File.Exists(basePatchCatalog + "/" + fi.Name) || !IsSymbolicLink(fi.FullName))
                             {
                                 Log($"Removing {fi.FullName}");
                                 DeleteFile(fi.FullName);
@@ -2408,7 +2400,7 @@ namespace Frosty.ModSupport
                 proc.Start();
                 proc.WaitForExit();
 
-                for (int i = 0; i < 240; i++)
+                for (int i = 0; i < 33; i++)
                 {
                     if (!Directory.Exists(path))
                     {
@@ -2416,7 +2408,7 @@ namespace Frosty.ModSupport
                         break;
                     }
 
-                    Thread.Sleep(30);
+                    Thread.Sleep(15);
                 }
 
                 return;
@@ -2474,7 +2466,7 @@ namespace Frosty.ModSupport
             proc.Start();
             proc.WaitForExit();
 
-            for (int i = 0; i < 240; i++)
+            for (int i = 0; i < 33; i++)
             {
                 if (!File.Exists(path))
                 {
@@ -2482,13 +2474,23 @@ namespace Frosty.ModSupport
                     break;
                 }
 
-                Thread.Sleep(30);
+                Thread.Sleep(15);
             }
+        }
+
+        private bool ShouldCleanModDir(string modPath)
+        {
+            if (ShouldUseHardLink())
+            {
+                return true;
+            }
+
+            return !IsSymbolicLink(Path.Combine(modPath, "Data"));
         }
 
         private bool ShouldUseHardLink()
         {
-            if (Config.Get<bool>("UseHardLink", false))
+            if (Config.Get<bool>("UseHardLink", true))
             {
                 Log("HardLink enabled in options.");
                 return true;
@@ -2595,7 +2597,7 @@ namespace Frosty.ModSupport
             proc.Start();
             proc.WaitForExit();
 
-            for (int i = 0; i < 240; i++)
+            for (int i = 0; i < 33; i++)
             {
                 if (File.Exists(destination) || Directory.Exists(destination))
                 {
@@ -2603,7 +2605,7 @@ namespace Frosty.ModSupport
                     break;
                 }
 
-                Thread.Sleep(30);
+                Thread.Sleep(15);
             }
         }
 
@@ -2646,22 +2648,32 @@ namespace Frosty.ModSupport
             }
         }
 
-        private static bool IsSymbolicLink(FileInfo fi)
+        private static bool IsSymbolicLink(string path)
         {
-            var isSymbolic = true;
-
             if (OperatingSystemHelper.IsWine())
             {
-                isSymbolic = IsSymbolicLinkLinux(fi.FullName);
+                return IsSymbolicLinkLinux(path);
+            }
+
+            if (!File.Exists(path) && !Directory.Exists(path))
+            {
+                return false;
+            }
+
+            FileAttributes attributes;
+
+            if (File.Exists(path))
+            {
+                var fi = new FileInfo(path);
+                attributes = fi.Attributes;
             }
             else
             {
-                isSymbolic = (fi.Attributes & FileAttributes.ReparsePoint) != 0;
+                var di = new DirectoryInfo(path);
+                attributes = di.Attributes;
             }
 
-            Log($"Is file '{fi.Name}' symbolic: {isSymbolic}");
-
-            return isSymbolic;
+            return (attributes & FileAttributes.ReparsePoint) != 0;
         }
 
         private static bool IsSymbolicLinkLinux(string path)
@@ -2691,7 +2703,7 @@ namespace Frosty.ModSupport
 
             string status = string.Empty;
 
-            for (int i = 0; i < 240; i++)
+            for (int i = 0; i < 33; i++)
             {
                 status = File.ReadAllText("linux_result");
 
@@ -2701,13 +2713,16 @@ namespace Frosty.ModSupport
                     break;
                 }
 
-                Thread.Sleep(30);
+                Thread.Sleep(15);
             }
 
             if (string.IsNullOrWhiteSpace(status))
             {
+                Log($"Could not determine if '{path}' is a symbolic link.");
                 throw new Exception($"Could not determine if '{path}' is a symbolic link.");
             }
+
+            File.Delete("linux_result");
 
             return status.ToLower().StartsWith("l");
         }
