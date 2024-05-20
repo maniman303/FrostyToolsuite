@@ -805,15 +805,16 @@ namespace FrostyModManager
                     sb.Append("\r\n\r\nError happened while coping options to clipboard. Try to install mods again or write them manually.");
                 }
 
+                if (!SymLinkHelper.AreSymLinksSupported)
+                {
+                    sb.Append("\r\n\r\nWarning:\r\nFrosty could not initialize Soft Links, so Hard Links were used for mod installation. Please report this for me to improve Soft Links implementation.");
+                }
+
                 FrostyMessageBox.Show(sb.ToString(), "Mods installed successfully");
             }
-            else if (retCode == 5)
+            else if (retCode == -2)
             {
-                FrostyMessageBox.Show("Frosty had to update config in the registry, to enable symbolic links. Please restart the app.", "Restart required");
-            }
-            else if (retCode == 6)
-            {
-                FrostyMessageBox.Show("Mods installation failed due to missing 'koaloader.dll' file in 'ThirdParty' folder.\r\nPlease follow the FrostyModManager Linux Patch installation guide.", "Mods installation failed");
+                FrostyMessageBox.Show("Both Hard Link and Soft Link methods are unavailable on your system. Please report this issue. Your game files might be damaged.\r\n", "Mods installation failed");
             }
             else
             {

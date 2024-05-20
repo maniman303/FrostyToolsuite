@@ -4,10 +4,16 @@ namespace FrostyModManager
 {
     public static class OperatingSystemHelper
     {
+        private const bool forceTrue = false;
         private static bool? _value = null;
 
-        public static bool IsWine()
+        public static bool IsWine(bool useForce = true)
         {
+            if (forceTrue && useForce)
+            {
+                return true;
+            }
+
             if (_value != null)
             {
                 return _value ?? true;
