@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Linq;
 using Microsoft.Win32;
-using Newtonsoft.Json.Linq;
 
 namespace Frosty.Core
 {
