@@ -1017,6 +1017,9 @@ namespace Frosty.ModSupport
 
             SymLinkHelper.Initialize(fs.BasePath);
 
+            FileLogger.Info($"Hard Link support: {SymLinkHelper.AreHardLinksSupported}");
+            FileLogger.Info($"Symbolic Link support: {SymLinkHelper.AreSymLinksSupported}");
+
             if (!ShouldUseHardLink() && !SymLinkHelper.AreSymLinksSupported)
             {
                 return -2;
@@ -1055,7 +1058,7 @@ namespace Frosty.ModSupport
             watch.Start();
 
             cancelToken.ThrowIfCancellationRequested();
-            Logger.Log("Loading Mods");
+            Logger.Log("Setup verification");
 
             bool needsModding = false;
             if (!File.Exists(Path.Combine(modDataPath, patchPath, "mods.json")))
@@ -1104,7 +1107,8 @@ namespace Frosty.ModSupport
                 }
                 else if (ShouldCleanModDir(modDataPath))
                 {
-                    FileLogger.Info("Clearing mod directory.");
+                    Logger.Log("Clearing Mods directory");
+                    FileLogger.Info("Clearing mods directory.");
                     SymLinkHelper.DeleteDirectorySafe(modDataPath);
                 }
 
@@ -2375,6 +2379,8 @@ namespace Frosty.ModSupport
                 CreateSymbolicLinksStructure(cmdArgs);
             }
 
+            FileLogger.Info("Linking finished.");
+
             return true;
         }
 
@@ -2433,9 +2439,13 @@ namespace Frosty.ModSupport
 
         private void CreateSymbolicLinksStructureLinux(List<SymLinkStruct> cmdArgs)
         {
-            foreach (SymLinkStruct arg in cmdArgs)
+            var batches = BatchesHelper.Split(cmdArgs, 12);
+
+            foreach (var batch in batches)
             {
-                SymLinkHelper.CreateSymlinkLinux(arg.src, arg.dest);
+                var symTasks = batch.Select(c => Task.Run(() => SymLinkHelper.CreateSymlinkLinux(c.src, c.dest))).ToArray();
+
+                Task.WaitAll(symTasks);
             }
         }
 

@@ -133,6 +133,7 @@
     <Compile Include="Attributes\RegisterThirdPartyDllAttribute.cs" />
     <Compile Include="Attributes\RegisterTypeOverrideAttribute.cs" />
     <Compile Include="Attributes\RegisterUserShaderAttribute.cs" />
+    <Compile Include="BatchesHelper.cs" />
     <Compile Include="Controls\FrostyExceptionBox.cs" />
     <Compile Include="Controls\VirtualizingTilePanel.cs" />
     <Compile Include="Converters\AssetEntryToBitmapSourceConverter.cs" />

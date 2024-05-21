@@ -101,9 +101,9 @@ namespace Frosty.Core
             {
                 IsSymbolicLinkLinux(tempFile);
             }
-            catch
+            catch (Exception ex)
             {
-                FileLogger.Info("Failed to test symbolic link initialization.");
+                FileLogger.Info($"Failed to test symbolic link initialization. Reason: {ex.Message}");
                 _areSymLinksLinuxSupported = false;
             }
 
@@ -119,9 +119,14 @@ namespace Frosty.Core
 
             path = Path.GetFullPath(path);
 
-            if (!OperatingSystemHelper.IsWine() || !_areSymLinksLinuxSupported)
+            if (!OperatingSystemHelper.IsWine())
             {
                 Directory.Delete(path, true);
+                return;
+            }
+
+            if (!_areSymLinksLinuxSupported)
+            {
                 return;
             }
 
@@ -180,9 +185,14 @@ namespace Frosty.Core
                 return;
             }
 
-            if (!OperatingSystemHelper.IsWine() || !_areSymLinksLinuxSupported)
+            if (!OperatingSystemHelper.IsWine())
             {
                 File.Delete(path);
+                return;
+            }
+
+            if (!_areSymLinksLinuxSupported)
+            {
                 return;
             }
 
@@ -400,14 +410,14 @@ namespace Frosty.Core
 
             var linuxPath = GetLinuxPath(path);
 
-            File.Delete(resFilePath);
+            var resFileLinuxPath = $"{linuxPath}{resSufix}";
 
             var proc = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/c {lsPath} -l \"{linuxPath}\" > {linuxPath}{resSufix}",
+                    Arguments = $"/c {lsPath} -l \"{linuxPath}\" > \"{resFileLinuxPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }

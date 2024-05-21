@@ -814,7 +814,7 @@ namespace FrostyModManager
             }
             else if (retCode == -2)
             {
-                FrostyMessageBox.Show("Both Hard Link and Symbolic Link methods are unavailable on your system. Please report this issue.\r\nYour game files might be damaged.\r\n", "Mods installation failed");
+                FrostyMessageBox.Show("Both Hard Link and Symbolic Link methods are unavailable on your system. Please report this issue.\r\nYou will need to manually remove ModData folder from game directory. Your game files might be damaged.\r\n", "Mods installation failed");
             }
             else
             {
