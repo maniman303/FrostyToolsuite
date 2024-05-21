@@ -1110,6 +1110,7 @@ namespace Frosty.ModSupport
                     Logger.Log("Reseting ModData");
                     FileLogger.Info("Reseting ModData.");
                     SymLinkHelper.DeleteDirectorySafe(modDataPath);
+                    FileLogger.Info("Reseting ModData finished.");
                 }
 
                 cancelToken.ThrowIfCancellationRequested();
@@ -1206,7 +1207,7 @@ namespace Frosty.ModSupport
                 cancelToken.ThrowIfCancellationRequested();
                 Logger.Log("Cleaning Up ModData");
                 App.Logger.Log("Cleaning Up ModData");
-                FileLogger.Info("Cleaning Up ModData");
+                FileLogger.Info("Cleaning Up ModData.");
 
                 List<SymLinkStruct> cmdArgs = new List<SymLinkStruct>();
 
@@ -1295,6 +1296,8 @@ namespace Frosty.ModSupport
                         }
                     }
                 }
+
+                FileLogger.Info("Cleaning Up ModData finished.");
 
                 // add cas files to link
                 foreach (string catalog in fs.Catalogs)

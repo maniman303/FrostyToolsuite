@@ -111,11 +111,11 @@ namespace Frosty.Core
             File.Delete(tempFile);
         }
 
-        //TODO: rewrite
         public static void DeleteDirectorySafe(string path)
         {
             if (!Directory.Exists(path))
             {
+                FileLogger.Info($"Directory delete aborted. Path '{path}' does not exists.");
                 return;
             }
 
@@ -127,62 +127,101 @@ namespace Frosty.Core
                 return;
             }
 
+            if (IsSymbolicLink(path))
+            {
+                DeleteDirectorySymLink(path);
+                return;
+            }
+
             FileLogger.Info($"Removing directory '{path}'.");
 
-            var isSymLink = IsSymbolicLink(path);
+            var realDirs = new List<string> { path };
+            while (realDirs.Count > 0)
+            {
+                var files = new List<string>();
+                var dirs = new List<string>();
 
-            if (isSymLink && !OperatingSystemHelper.IsWine())
+                foreach (var realDir in realDirs)
+                {
+                    files.AddRange(Directory.GetFiles(realDir));
+                    dirs.AddRange(Directory.GetDirectories(realDir));
+                }
+
+                FileLogger.Info($"Removing {files.Count} files.");
+
+                var fileBatches = BatchesHelper.Split(files, BatcheSize);
+                foreach (var fileBatch in fileBatches)
+                {
+                    var fileTasks = fileBatch.Select(f => Task.Run(() => DeleteFileSafe(f))).ToArray();
+                    Task.WaitAll(fileTasks);
+                }
+
+                var dirSymLinks = new List<string>();
+                var dirBatches = BatchesHelper.Split(dirs, BatcheSize);
+                foreach (var dirBatch in dirBatches)
+                {
+                    var dirTasks = dirBatch.Select(d => Task.Run(() => {
+                        return IsSymbolicLink(d) ? d : string.Empty;
+                    })).ToArray();
+                    Task.WaitAll(dirTasks);
+
+                    dirSymLinks.AddRange(dirTasks.Select(d => d.Result).Where(d => !string.IsNullOrWhiteSpace(d)));
+                }
+
+                FileLogger.Info($"Removing {dirSymLinks.Count} directory symbolic links.");
+
+                dirBatches = BatchesHelper.Split(dirSymLinks, BatcheSize);
+                foreach (var dirBatch in dirBatches)
+                {
+                    var dirTasks = dirBatch.Select(d => Task.Run(() => DeleteDirectorySymLink(d))).ToArray();
+                    Task.WaitAll(dirTasks);
+                }
+
+                dirs.Clear();
+                foreach (var realDir in realDirs)
+                {
+                    dirs.AddRange(Directory.GetDirectories(realDir));
+                }
+
+                realDirs.Clear();
+                realDirs.AddRange(dirs);
+            }
+
+            Directory.Delete(path, true);
+        }
+
+        private static void DeleteDirectorySymLink(string path)
+        {
+            if (!OperatingSystemHelper.IsWine())
             {
                 Directory.Delete(path, true);
                 return;
             }
-            else if (isSymLink)
+
+            var linuxPath = GetLinuxPath(path);
+            var proc = new Process
             {
-                var linuxPath = GetLinuxPath(path);
-                var proc = new Process
+                StartInfo = new ProcessStartInfo
                 {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = "cmd.exe",
-                        Arguments = $"/c {rmPath} \"{linuxPath}\"",
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
+                    FileName = "cmd.exe",
+                    Arguments = $"/c {rmPath} \"{linuxPath}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
 
-                proc.Start();
-                proc.WaitForExit();
+            proc.Start();
+            proc.WaitForExit();
 
-                for (int i = 0; i < waitLoops; i++)
+            for (int i = 0; i < waitLoops; i++)
+            {
+                if (!Directory.Exists(path))
                 {
-                    if (!Directory.Exists(path))
-                    {
-                        break;
-                    }
-
-                    Thread.Sleep(waitTime);
+                    break;
                 }
 
-                return;
+                Thread.Sleep(waitTime);
             }
-
-            var files = Directory.GetFiles(path);
-
-            var fileBatches = BatchesHelper.Split(files.ToList(), BatcheSize);
-            foreach (var fileBatch in fileBatches)
-            {
-                var fileTasks = fileBatch.Select(f => Task.Run(() => DeleteFileSafe(f))).ToArray();
-                Task.WaitAll(fileTasks);
-            }
-
-            var dirs = Directory.GetDirectories(path);
-
-            foreach (var dir in dirs)
-            {
-                DeleteDirectorySafe(dir);
-            }
-
-            Directory.Delete(path, true);
         }
 
         public static void DeleteFileSafe(string path)
@@ -468,6 +507,11 @@ namespace Frosty.Core
 
         private static string CleanPath(string path)
         {
+            if (path.EndsWith(":/") || path.EndsWith(":\\"))
+            {
+                return path;
+            }
+
             while (path.EndsWith("/") || path.EndsWith("\\"))
             {
                 path = path.Substring(0, path.Length - 1);
