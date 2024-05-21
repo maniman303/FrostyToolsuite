@@ -1073,6 +1073,7 @@ namespace Frosty.ModSupport
                 }
                 catch
                 {
+                    FileLogger.Info("Damaged 'mods.json' file.");
                     needsModding = true;
                 }
 
@@ -2345,7 +2346,13 @@ namespace Frosty.ModSupport
                 return true;
             }
 
-            return !DoesDirectoryContainSymLinks(modPath);
+            FileLogger.Info("Start looking for symlinks in directory.");
+
+            var result = !DoesDirectoryContainSymLinks(modPath);
+
+            FileLogger.Info("Finished looking for symlinks in directory.");
+
+            return result;
         }
 
         private static bool DoesDirectoryContainSymLinks(string path)

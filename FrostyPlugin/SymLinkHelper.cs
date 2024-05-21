@@ -18,7 +18,7 @@ namespace Frosty.Core
         private const string envVarName = "PATHEXT";
 
         private const int waitLoops = 33;
-        private const int waitTime = 5;
+        private const int waitTime = 3;
 
         private const string lsPath = "/bin/ls";
         private const string lnPath = "/bin/ln";
