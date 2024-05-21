@@ -7,11 +7,14 @@ using System.Threading;
 using System.Linq;
 using Microsoft.Win32;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Frosty.Core
 {
     public static class SymLinkHelper
     {
+        private const bool isAsyncEnabled = true;
+
         private const string linuxSufix = "linux_result";
         private const string linuxTemp = "linux_temp";
 
@@ -157,10 +160,8 @@ namespace Frosty.Core
 
             var files = Directory.GetFiles(path);
 
-            foreach (var file in files)
-            {
-                DeleteFileSafe(file);
-            }
+            var fileTasks = files.Select(f => Task.Run(() => DeleteFileSafe(f))).ToArray();
+            Task.WaitAll(fileTasks);
 
             var dirs = Directory.GetDirectories(path);
 
@@ -216,6 +217,88 @@ namespace Frosty.Core
 
                 Thread.Sleep(waitTime);
             }
+        }
+
+        public static bool DoesDirectoryContainSymLinks(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                return false;
+            }
+
+            var files = Directory.GetFiles(path);
+
+            if (isAsyncEnabled)
+            {
+                var fileTasks = files.Select(f => Task.Run(() =>
+                {
+                    return IsSymbolicLink(f);
+                })).ToArray();
+
+                Task.WaitAll(fileTasks);
+
+                foreach (var ft in fileTasks)
+                {
+                    if (ft.Result)
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                foreach (var fi in files)
+                {
+                    if (IsSymbolicLink(fi))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            var dirs = Directory.GetDirectories(path);
+            var realDirs = new List<string>();
+
+            if (isAsyncEnabled)
+            {
+                var dirTasks = dirs.Select(d => Task.Run(() => {
+                    return IsSymbolicLink(d) ? string.Empty : d;
+                })).ToArray();
+
+                Task.WaitAll(dirTasks);
+
+                foreach (var dt in dirTasks)
+                {
+                    if (dt.Result == string.Empty)
+                    {
+                        return true;
+                    }
+
+                    realDirs.Add(dt.Result);
+                }
+            }
+            else
+            {
+                foreach (var dir in dirs)
+                {
+                    if (IsSymbolicLink(dir))
+                    {
+                        return true;
+                    }
+
+                    realDirs.Add(dir);
+                }
+            }
+
+            foreach (var dir in realDirs)
+            {
+                if (DoesDirectoryContainSymLinks(dir))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static void CreateSymlinkLinux(string source, string destination)

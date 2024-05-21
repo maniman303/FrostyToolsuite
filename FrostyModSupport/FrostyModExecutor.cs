@@ -2346,54 +2346,13 @@ namespace Frosty.ModSupport
                 return true;
             }
 
-            FileLogger.Info("Start looking for symlinks in directory.");
+            FileLogger.Info("Sym Link search started.");
 
-            var result = !DoesDirectoryContainSymLinks(modPath);
+            var result = SymLinkHelper.DoesDirectoryContainSymLinks(modPath);
 
-            FileLogger.Info("Finished looking for symlinks in directory.");
+            FileLogger.Info($"Sym Link search finished with result: {result}.");
 
-            return result;
-        }
-
-        private static bool DoesDirectoryContainSymLinks(string path)
-        {
-            if (!Directory.Exists(path))
-            {
-                return false;
-            }
-
-            var files = Directory.GetFiles(path);
-
-            foreach (var fi in files)
-            {
-                if (SymLinkHelper.IsSymbolicLink(fi))
-                {
-                    return true;
-                }
-            }
-
-            var dirs = Directory.GetDirectories(path);
-            var realDirs = new List<string>();
-
-            foreach (var dir in dirs)
-            {
-                if (SymLinkHelper.IsSymbolicLink(dir))
-                {
-                    return true;
-                }
-
-                realDirs.Add(dir);
-            }
-
-            foreach (var dir in realDirs)
-            {
-                if (DoesDirectoryContainSymLinks(dir))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return !result;
         }
 
         private bool RunSymbolicLinkProcess(List<SymLinkStruct> cmdArgs)
