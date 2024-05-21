@@ -807,14 +807,14 @@ namespace FrostyModManager
 
                 if (!SymLinkHelper.AreSymLinksSupported)
                 {
-                    sb.Append("\r\n\r\nWarning:\r\nFrosty could not initialize Soft Links, so Hard Links were used for mod installation. Please report this for me to improve Soft Links implementation.");
+                    sb.Append("\r\n\r\nWarning:\r\nFrosty could not initialize Symbolic Links, so Hard Links were used for mod installation. Please report this for me to improve Symbolic Links implementation.");
                 }
 
                 FrostyMessageBox.Show(sb.ToString(), "Mods installed successfully");
             }
             else if (retCode == -2)
             {
-                FrostyMessageBox.Show("Both Hard Link and Soft Link methods are unavailable on your system. Please report this issue. Your game files might be damaged.\r\n", "Mods installation failed");
+                FrostyMessageBox.Show("Both Hard Link and Symbolic Link methods are unavailable on your system. Please report this issue.\r\nYour game files might be damaged.\r\n", "Mods installation failed");
             }
             else
             {

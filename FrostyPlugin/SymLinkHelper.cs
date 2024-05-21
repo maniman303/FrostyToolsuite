@@ -209,7 +209,7 @@ namespace Frosty.Core
         {
             if (!File.Exists(source) && !Directory.Exists(source))
             {
-                FileLogger.Info($"Soft Link aborted. Source '{source}' does not exists.");
+                FileLogger.Info($"Symbolic Link aborted. Source '{source}' does not exists.");
                 return;
             }
 

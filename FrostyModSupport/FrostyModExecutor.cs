@@ -2407,13 +2407,13 @@ namespace Frosty.ModSupport
             }
             else if (OperatingSystemHelper.IsWine())
             {
-                FileLogger.Info("Using Linux soft linking.");
-                CreateSoftLinksStructureLinux(cmdArgs);
+                FileLogger.Info("Using Linux symbolic linking.");
+                CreateSymbolicLinksStructureLinux(cmdArgs);
             }
             else
             {
-                FileLogger.Info("Using soft linking.");
-                CreateSoftLinksStructure(cmdArgs);
+                FileLogger.Info("Using symbolic linking.");
+                CreateSymbolicLinksStructure(cmdArgs);
             }
 
             return true;
@@ -2457,7 +2457,7 @@ namespace Frosty.ModSupport
             }
         }
 
-        private void CreateSoftLinksStructure(List<SymLinkStruct> cmdArgs)
+        private void CreateSymbolicLinksStructure(List<SymLinkStruct> cmdArgs)
         {
             using (TextWriter writer = new StreamWriter(new FileStream(AppDomain.CurrentDomain.BaseDirectory + "\\run.bat", FileMode.Create)))
             {
@@ -2472,7 +2472,7 @@ namespace Frosty.ModSupport
             File.Delete("run.bat");
         }
 
-        private void CreateSoftLinksStructureLinux(List<SymLinkStruct> cmdArgs)
+        private void CreateSymbolicLinksStructureLinux(List<SymLinkStruct> cmdArgs)
         {
             foreach (SymLinkStruct arg in cmdArgs)
             {
