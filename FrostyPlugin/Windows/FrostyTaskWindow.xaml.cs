@@ -1,4 +1,5 @@
-﻿using FrostySdk.Converters;
+﻿using FrostyModManager;
+using FrostySdk.Converters;
 using FrostySdk.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -90,17 +91,21 @@ namespace Frosty.Core.Windows
             {
                 Application.Current.MainWindow.TaskbarItemInfo = new TaskbarItemInfo();
             }
-            Application.Current.MainWindow.TaskbarItemInfo.ProgressState = TaskbarItemProgressState.Normal;
 
-            BindingOperations.SetBinding(Application.Current.MainWindow.TaskbarItemInfo, TaskbarItemInfo.ProgressValueProperty, new Binding("Progress")
+            if (!OperatingSystemHelper.IsWine())
             {
-                Converter = new FunctionBasedValueConverter(),
-                ConverterParameter = new Func<object, object>(delegate (object value)
+                Application.Current.MainWindow.TaskbarItemInfo.ProgressState = TaskbarItemProgressState.Normal;
+
+                BindingOperations.SetBinding(Application.Current.MainWindow.TaskbarItemInfo, TaskbarItemInfo.ProgressValueProperty, new Binding("Progress")
                 {
-                    return (double)value / 100.0;
-                }),
-                Source = this,
-            });
+                    Converter = new FunctionBasedValueConverter(),
+                    ConverterParameter = new Func<object, object>(delegate (object value)
+                    {
+                        return (double)value / 100.0;
+                    }),
+                    Source = this,
+                });
+            }
 
             if (showCancelButton)
             {
@@ -109,11 +114,14 @@ namespace Frosty.Core.Windows
                 {
                     cancelButton.Click += CancelButton_Click;
 
-                    // register the "Esc" keybinding to the cancel button click event
-                    CommandBindings.RegisterKeyBindings(new Dictionary<KeyGesture, ExecutedRoutedEventHandler>
+                    if (!OperatingSystemHelper.IsWine())
                     {
-                        { new KeyGesture(Key.Escape), CancelButton_Click }
-                    });
+                        // register the "Esc" keybinding to the cancel button click event
+                        CommandBindings.RegisterKeyBindings(new Dictionary<KeyGesture, ExecutedRoutedEventHandler>
+                        {
+                            { new KeyGesture(Key.Escape), CancelButton_Click }
+                        });
+                    }
                 }
             }
         }
@@ -124,16 +132,38 @@ namespace Frosty.Core.Windows
             _cancelCallback(this);
         }
 
-        private async void FrostyTaskWindow_Loaded(object sender, RoutedEventArgs e)
+        private void FrostyTaskWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            await Task.Run(() =>
+            var bw = new BackgroundWorker { WorkerReportsProgress = true };
+
+            bw.DoWork += (s, evt) =>
             {
                 _callback(this);
-            });
+            };
 
-            Application.Current.MainWindow.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.None;
+            bw.RunWorkerCompleted += (s, evt) =>
+            {
+                if (!OperatingSystemHelper.IsWine())
+                {
+                    Application.Current.MainWindow.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.None;
+                }
 
-            Close();
+                Close();
+            };
+
+            bw.RunWorkerAsync();
+
+            //await Task.Run(() =>
+            //{
+            //    _callback(this);
+            //});
+
+            //if (!OperatingSystemHelper.IsWine())
+            //{
+            //    Application.Current.MainWindow.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.None;
+            //}
+
+            //Close();
         }
 
         public void Update(string status = null, double? progress = null)
@@ -152,6 +182,11 @@ namespace Frosty.Core.Windows
 
         public void SetIndeterminate(bool newIndeterminate)
         {
+            if (OperatingSystemHelper.IsWine())
+            {
+                return;
+            }
+
             Application.Current.Dispatcher.Invoke(() =>
             {
                 taskProgressBar.IsIndeterminate = newIndeterminate;

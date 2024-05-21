@@ -13,7 +13,7 @@ namespace Frosty.Core
 {
     public static class SymLinkHelper
     {
-        private const bool isAsyncEnabled = true;
+        public const int BatcheSize = 8;
 
         private const string linuxSufix = "linux_result";
         private const string linuxTemp = "linux_temp";
@@ -29,6 +29,7 @@ namespace Frosty.Core
         private const string rmPath = "/bin/rm";
 
         private static bool _areHardLinksSupported = false;
+
         public static bool AreHardLinksSupported => _areHardLinksSupported;
 
         private static bool _areSymLinksLinuxSupported = false;
@@ -110,6 +111,7 @@ namespace Frosty.Core
             File.Delete(tempFile);
         }
 
+        //TODO: rewrite
         public static void DeleteDirectorySafe(string path)
         {
             if (!Directory.Exists(path))
@@ -119,20 +121,22 @@ namespace Frosty.Core
 
             path = Path.GetFullPath(path);
 
-            if (!OperatingSystemHelper.IsWine())
+            if (!_areSymLinksLinuxSupported)
             {
                 Directory.Delete(path, true);
                 return;
             }
 
-            if (!_areSymLinksLinuxSupported)
-            {
-                return;
-            }
-
             FileLogger.Info($"Removing directory '{path}'.");
 
-            if (IsSymbolicLinkLinux(path))
+            var isSymLink = IsSymbolicLink(path);
+
+            if (isSymLink && !OperatingSystemHelper.IsWine())
+            {
+                Directory.Delete(path, true);
+                return;
+            }
+            else if (isSymLink)
             {
                 var linuxPath = GetLinuxPath(path);
                 var proc = new Process
@@ -153,7 +157,6 @@ namespace Frosty.Core
                 {
                     if (!Directory.Exists(path))
                     {
-                        FileLogger.Info($"Symbolic link directory removed at try: {i}");
                         break;
                     }
 
@@ -165,8 +168,12 @@ namespace Frosty.Core
 
             var files = Directory.GetFiles(path);
 
-            var fileTasks = files.Select(f => Task.Run(() => DeleteFileSafe(f))).ToArray();
-            Task.WaitAll(fileTasks);
+            var fileBatches = BatchesHelper.Split(files.ToList(), BatcheSize);
+            foreach (var fileBatch in fileBatches)
+            {
+                var fileTasks = fileBatch.Select(f => Task.Run(() => DeleteFileSafe(f))).ToArray();
+                Task.WaitAll(fileTasks);
+            }
 
             var dirs = Directory.GetDirectories(path);
 
@@ -185,14 +192,9 @@ namespace Frosty.Core
                 return;
             }
 
-            if (!OperatingSystemHelper.IsWine())
+            if (!OperatingSystemHelper.IsWine() || !_areSymLinksLinuxSupported)
             {
                 File.Delete(path);
-                return;
-            }
-
-            if (!_areSymLinksLinuxSupported)
-            {
                 return;
             }
 
@@ -221,7 +223,6 @@ namespace Frosty.Core
             {
                 if (!File.Exists(path))
                 {
-                    FileLogger.Info($"Symbolic link file removed at try: {i}");
                     break;
                 }
 
@@ -236,75 +237,61 @@ namespace Frosty.Core
                 return false;
             }
 
-            var files = Directory.GetFiles(path);
-
-            if (isAsyncEnabled)
+            var realDirs = new List<string>
             {
-                var fileTasks = files.Select(f => Task.Run(() =>
-                {
-                    return IsSymbolicLink(f);
-                })).ToArray();
+                path
+            };
 
-                Task.WaitAll(fileTasks);
+            while (realDirs.Count > 0)
+            {
+                var files = new List<string>();
+                var dirs = new List<string>();
 
-                foreach (var ft in fileTasks)
+                foreach (var realDir in realDirs)
                 {
-                    if (ft.Result)
+                    files.AddRange(Directory.GetFiles(realDir));
+                    dirs.AddRange(Directory.GetDirectories(realDir));
+                }
+
+                realDirs.Clear();
+
+                var fileBatches = BatchesHelper.Split(files, BatcheSize);
+                foreach (var fileBatch in fileBatches)
+                {
+                    var fileTasks = fileBatch.Select(f => Task.Run(() =>
                     {
-                        return true;
+                        return IsSymbolicLink(f);
+                    })).ToArray();
+
+                    Task.WaitAll(fileTasks);
+
+                    foreach (var ft in fileTasks)
+                    {
+                        if (ft.Result)
+                        {
+                            return true;
+                        }
                     }
                 }
-            }
-            else
-            {
-                foreach (var fi in files)
+
+                var dirBatches = BatchesHelper.Split(dirs, BatcheSize);
+                foreach (var dirBatch in dirBatches)
                 {
-                    if (IsSymbolicLink(fi))
+                    var dirTasks = dirBatch.Select(d => Task.Run(() => {
+                        return IsSymbolicLink(d) ? string.Empty : d;
+                    })).ToArray();
+
+                    Task.WaitAll(dirTasks);
+
+                    foreach (var dt in dirTasks)
                     {
-                        return true;
+                        if (dt.Result == string.Empty)
+                        {
+                            return true;
+                        }
+
+                        realDirs.Add(dt.Result);
                     }
-                }
-            }
-
-            var dirs = Directory.GetDirectories(path);
-            var realDirs = new List<string>();
-
-            if (isAsyncEnabled)
-            {
-                var dirTasks = dirs.Select(d => Task.Run(() => {
-                    return IsSymbolicLink(d) ? string.Empty : d;
-                })).ToArray();
-
-                Task.WaitAll(dirTasks);
-
-                foreach (var dt in dirTasks)
-                {
-                    if (dt.Result == string.Empty)
-                    {
-                        return true;
-                    }
-
-                    realDirs.Add(dt.Result);
-                }
-            }
-            else
-            {
-                foreach (var dir in dirs)
-                {
-                    if (IsSymbolicLink(dir))
-                    {
-                        return true;
-                    }
-
-                    realDirs.Add(dir);
-                }
-            }
-
-            foreach (var dir in realDirs)
-            {
-                if (DoesDirectoryContainSymLinks(dir))
-                {
-                    return true;
                 }
             }
 

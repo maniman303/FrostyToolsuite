@@ -1107,8 +1107,8 @@ namespace Frosty.ModSupport
                 }
                 else if (ShouldCleanModDir(modDataPath))
                 {
-                    Logger.Log("Clearing Mods directory");
-                    FileLogger.Info("Clearing mods directory.");
+                    Logger.Log("Reseting ModData");
+                    FileLogger.Info("Reseting ModData.");
                     SymLinkHelper.DeleteDirectorySafe(modDataPath);
                 }
 
@@ -1206,6 +1206,7 @@ namespace Frosty.ModSupport
                 cancelToken.ThrowIfCancellationRequested();
                 Logger.Log("Cleaning Up ModData");
                 App.Logger.Log("Cleaning Up ModData");
+                FileLogger.Info("Cleaning Up ModData");
 
                 List<SymLinkStruct> cmdArgs = new List<SymLinkStruct>();
 
@@ -1254,14 +1255,18 @@ namespace Frosty.ModSupport
                             if (!Directory.Exists(modDataPath + "Update"))
                                 Directory.CreateDirectory(modDataPath + "Update");
 
+                            var dirs = Directory.GetDirectories(Path.Combine(fs.BasePath, "Update"));
+
                             // update paths
-                            foreach (string path in Directory.EnumerateDirectories(fs.BasePath + "Update"))
+                            foreach (string path in dirs)
                             {
                                 DirectoryInfo di = new DirectoryInfo(path);
 
                                 // ignore the patch directory
                                 if (di.Name.ToLower() != "patch")
+                                {
                                     cmdArgs.Add(new SymLinkStruct(modDataPath + "Update/" + di.Name, di.FullName, true));
+                                }
                             }
                         }
                         else if (ProfilesLibrary.DataVersion != (int)ProfileVersion.Fifa17)
@@ -2238,35 +2243,42 @@ namespace Frosty.ModSupport
         private bool DeleteSelectFiles(string modPath)
         {
             DirectoryInfo di = new DirectoryInfo(modPath);
-            if (di.Exists)
+
+            if (!di.Exists)
             {
-                RecursiveDeleteFiles(modPath);
-                foreach (string catalog in fs.Catalogs)
+                return false;
+            }
+
+            RecursiveDeleteFiles(modPath);
+            foreach (string catalog in fs.Catalogs)
+            {
+                string basePatchCatalog = fs.ResolvePath("native_patch/" + catalog);
+                if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5) //woo patch folder
+                    basePatchCatalog = fs.ResolvePath("native_data/" + catalog);
+                string modDataCatalog = $"{modPath}/{catalog}";
+
+                if (!Directory.Exists(modDataCatalog))
                 {
-                    string basePatchCatalog = fs.ResolvePath("native_patch/" + catalog);
-                    if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5) //woo patch folder
-                        basePatchCatalog = fs.ResolvePath("native_data/" + catalog);
-                    string modDataCatalog = $"{modPath}/{catalog}";
-
-                    if (Directory.Exists(modDataCatalog))
-                    {
-                        foreach (string filename in Directory.EnumerateFiles(modDataCatalog))
-                        {
-                            FileInfo fi = new FileInfo(filename);
-
-                            // delete if cas does not exist in base patch OR is not a symbolic link
-                            if (!File.Exists(basePatchCatalog + "/" + fi.Name) || !SymLinkHelper.IsSymbolicLink(fi.FullName))
-                            {
-                                FileLogger.Info($"Removing {fi.FullName}");
-                                SymLinkHelper.DeleteFileSafe(fi.FullName);
-                            }
-                        }
-                    }
+                    continue;
                 }
 
-                return true;
+                //TODO: multi thread with batches
+                var files = Directory.GetFiles(modDataCatalog);
+
+                foreach (string file in files)
+                {
+                    var fileName = Path.GetFileName(file);
+
+                    // delete if cas does not exist in base patch OR is not a symbolic link
+                    if (!File.Exists(Path.Combine(basePatchCatalog, fileName)) || !SymLinkHelper.IsSymbolicLink(file))
+                    {
+                        FileLogger.Info($"Removing file '{file}'.");
+                        SymLinkHelper.DeleteFileSafe(file);
+                    }
+                }
             }
-            return false;
+
+            return true;
         }
 
         private bool IsSamePatch(string modPath)
@@ -2315,32 +2327,62 @@ namespace Frosty.ModSupport
             return true;
         }
 
-        private void RecursiveDeleteFiles(string path)
+        private static void RecursiveDeleteFiles(string path)
         {
-            DirectoryInfo di = new DirectoryInfo(path);
-
-            DirectoryInfo[] paths = di.GetDirectories();
-            FileInfo[] files = di.GetFiles();
-            foreach (FileInfo fi in files)
+            if (!Directory.Exists(path))
             {
-                // delete all cat/toc/sb files and the initfs_win32 and mods file
-                if (fi.Extension == ".cat" || fi.Extension == ".toc" || fi.Extension == ".sb" || fi.Name.ToLower() == "mods.txt" || fi.Name.ToLower() == "mods.json")
-                {
-                    // dont delete layout.toc
-                    if (fi.Name.ToLower() == "layout.toc")
-                    {
-                        continue;
-                    }
+                return;
+            }
 
-                    SymLinkHelper.DeleteFileSafe(fi.FullName);
+            var dirs = new List<string>{ path };
+            
+            while (dirs.Count > 0)
+            {
+                var newDirs = new List<string>();
+                var files = new List<string>();
+
+                foreach (var dir in dirs)
+                {
+                    files.AddRange(Directory.GetFiles(dir));
+                    newDirs.AddRange(Directory.GetDirectories(dir));
+                }
+
+                dirs.Clear();
+                dirs.AddRange(newDirs);
+
+                files = files.Where(f => ShouldFileBeRecursiveDeleted(f)).ToList();
+
+                var batches = BatchesHelper.Split(files, SymLinkHelper.BatcheSize);
+
+                foreach (var batch in batches)
+                {
+                    var tasks = batch.Select(f => Task.Run(() => SymLinkHelper.DeleteFileSafe(f))).ToArray();
+                    Task.WaitAll(tasks);
                 }
             }
+        }
 
-            foreach (DirectoryInfo subDi in paths)
+        private static bool ShouldFileBeRecursiveDeleted(string path)
+        {
+            var fileName = Path.GetFileName(path).ToLower();
+            var extension = Path.GetExtension(path).ToLower();
+
+            if (fileName == "layout.toc")
             {
-                string tempPath = Path.Combine(path, subDi.Name);
-                RecursiveDeleteFiles(tempPath);
+                return false;
             }
+
+            if (extension == ".cat" || extension == ".toc" || extension == ".sb")
+            {
+                return true;
+            }
+
+            if (fileName == "mods.txt" || fileName == "mods.json")
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private bool ShouldCleanModDir(string modPath)
@@ -2439,7 +2481,7 @@ namespace Frosty.ModSupport
 
         private void CreateSymbolicLinksStructureLinux(List<SymLinkStruct> cmdArgs)
         {
-            var batches = BatchesHelper.Split(cmdArgs, 12);
+            var batches = BatchesHelper.Split(cmdArgs, SymLinkHelper.BatcheSize);
 
             foreach (var batch in batches)
             {

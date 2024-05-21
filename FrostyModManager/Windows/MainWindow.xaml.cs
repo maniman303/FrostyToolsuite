@@ -307,16 +307,6 @@ namespace FrostyModManager
             (App.Logger as FrostyLogger).AddBinding(tb, TextBox.TextProperty);
 
             string gamePath = Config.Get<string>("GamePath", "", ConfigScope.Game);
-            //string gamePath = Config.Get<string>("Init", "GamePath", "");
-            //string gameProfileName = Config.Get<string>("Init", "Profile", "");
-
-            //if (!ProfilesLibrary.Initialize(gameProfileName))
-            //{
-            //    FrostyMessageBox.Show("There was an error when trying to load game using specified profile.", "Frosty Mod Manager");
-            //    Closing -= FrostyWindow_Closing;
-            //    Close();
-            //    return;
-            //}
 
             if (!ProfilesLibrary.EnableExecution)
             {
@@ -327,13 +317,13 @@ namespace FrostyModManager
             }
 
             fs = new FileSystem(gamePath);
-            //fs = new FileSystem(Config.Get<string>("Init", "GamePath", ""));
+
             foreach (FileSystemSource source in ProfilesLibrary.Sources)
                 fs.AddSource(source.Path, source.SubDirs);
             fs.Initialize();
 
             Config.Save();
-            //Config.Save(App.configFilename);
+
             Title = "Frosty Mod Manager - " + App.Version + " (" + ProfilesLibrary.DisplayName + ")";
 
             TypeLibrary.Initialize();
