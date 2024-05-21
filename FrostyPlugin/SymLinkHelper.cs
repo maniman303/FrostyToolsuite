@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Linq;
 using Microsoft.Win32;
+using System.Threading.Tasks;
 
 namespace Frosty.Core
 {
@@ -18,7 +19,7 @@ namespace Frosty.Core
         private const string envVarName = "PATHEXT";
 
         private const int waitLoops = 33;
-        private const int waitTime = 3;
+        private const int waitTime = 6;
 
         private const string lsPath = "/bin/ls";
         private const string lnPath = "/bin/ln";
@@ -125,8 +126,6 @@ namespace Frosty.Core
 
             if (IsSymbolicLinkLinux(path))
             {
-                FileLogger.Info($"Directory '{path}' is a symlink.");
-
                 var linuxPath = GetLinuxPath(path);
                 var proc = new Process
                 {
@@ -221,7 +220,9 @@ namespace Frosty.Core
 
         public static void CreateSymlinkLinux(string source, string destination)
         {
-            if (!File.Exists(source) && !Directory.Exists(source))
+            var isFile = File.Exists(source);
+
+            if (!isFile && !Directory.Exists(source))
             {
                 FileLogger.Info($"Symbolic Link aborted. Source '{source}' does not exists.");
                 return;
@@ -252,9 +253,12 @@ namespace Frosty.Core
 
             for (int i = 0; i < waitLoops; i++)
             {
-                if (File.Exists(destination) || Directory.Exists(destination))
+                if (isFile && File.Exists(destination))
                 {
-                    FileLogger.Info($"Symbolic link created at try: {i}");
+                    break;
+                }
+                else if (!isFile && Directory.Exists(destination))
+                {
                     break;
                 }
 
@@ -269,14 +273,16 @@ namespace Frosty.Core
                 return IsSymbolicLinkLinux(path);
             }
 
-            if (!File.Exists(path) && !Directory.Exists(path))
+            var isFile = File.Exists(path);
+
+            if (!isFile && !Directory.Exists(path))
             {
                 return false;
             }
 
             FileAttributes attributes;
 
-            if (File.Exists(path))
+            if (isFile)
             {
                 var fi = new FileInfo(path);
                 attributes = fi.Attributes;
@@ -297,21 +303,28 @@ namespace Frosty.Core
                 return false;
             }
 
-            if (!File.Exists(path) && !Directory.Exists(path))
+            path = CleanPath(path);
+
+            var isFile = File.Exists(path);
+
+            if (!isFile && !Directory.Exists(path))
             {
                 return false;
             }
 
+            var resSufix = $".{DateTime.Now:ddMMHHmmss}.{linuxSufix}";
+            var resFilePath = $"{path}{resSufix}";
+
             var linuxPath = GetLinuxPath(path);
 
-            File.Delete(linuxSufix);
+            File.Delete(resFilePath);
 
             var proc = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/c {lsPath} -l \"{linuxPath}\" > {linuxSufix}",
+                    Arguments = $"/c {lsPath} -l \"{linuxPath}\" > {linuxPath}{resSufix}",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
@@ -324,11 +337,10 @@ namespace Frosty.Core
 
             for (int i = 0; i < waitLoops; i++)
             {
-                status = File.ReadAllText(linuxSufix);
+                status = File.ReadAllText(resFilePath);
 
                 if (!string.IsNullOrWhiteSpace(status))
                 {
-                    FileLogger.Info($"Symbolic link found at try: {i}");
                     break;
                 }
 
@@ -341,7 +353,7 @@ namespace Frosty.Core
                 throw new Exception($"Could not determine if '{path}' is a symbolic link.");
             }
 
-            File.Delete(linuxSufix);
+            File.Delete(resFilePath);
 
             return status.ToLower().StartsWith("l");
         }
@@ -369,12 +381,19 @@ namespace Frosty.Core
                 linuxPath = proc.StandardOutput.ReadLine();
             }
 
-            while (linuxPath.EndsWith("/") || linuxPath.EndsWith("\\"))
-            {
-                linuxPath = linuxPath.Substring(0, linuxPath.Length - 1);
-            }
+            linuxPath = CleanPath(linuxPath);
 
             return linuxPath;
+        }
+
+        private static string CleanPath(string path)
+        {
+            while (path.EndsWith("/") || path.EndsWith("\\"))
+            {
+                path = path.Substring(0, path.Length - 1);
+            }
+
+            return path;
         }
 
         private static string GetRealPath(string path)
