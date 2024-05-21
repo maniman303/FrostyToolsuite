@@ -77,11 +77,25 @@ namespace Frosty.Core
 
             _areSymLinksLinuxSupported = true;
 
-            File.Create(linuxTemp).Close();
+            var tempFile = Path.Combine(modPath, linuxTemp);
 
             try
             {
-                IsSymbolicLinkLinux(linuxTemp);
+                if (!File.Exists(tempFile))
+                {
+                    File.Create(tempFile).Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Info($"Exception when testing symbolic links. Details: {ex.Message}");
+                _areSymLinksLinuxSupported = false;
+                return;
+            }
+
+            try
+            {
+                IsSymbolicLinkLinux(tempFile);
             }
             catch
             {
@@ -89,7 +103,7 @@ namespace Frosty.Core
                 _areSymLinksLinuxSupported = false;
             }
 
-            File.Delete(linuxTemp);
+            File.Delete(tempFile);
         }
 
         public static void DeleteDirectorySafe(string path)
@@ -421,9 +435,18 @@ namespace Frosty.Core
             var orgFile = Path.Combine(modPath, "hard_link_test.txt");
             var linkFile = Path.Combine(modPath, "hard_link_test_link.txt");
 
-            if (!File.Exists(orgFile))
+            try
             {
-                File.Create(orgFile).Close();
+                if (!File.Exists(orgFile))
+                {
+                    File.Create(orgFile).Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Info($"Exception when testing hard links. Details: {ex.Message}");
+                _areHardLinksSupported = false;
+                return;
             }
 
             if (!File.Exists(orgFile))

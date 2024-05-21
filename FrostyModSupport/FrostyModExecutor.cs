@@ -1015,7 +1015,7 @@ namespace Frosty.ModSupport
 
             FileLogger.Info("Starting mod installation.");
 
-            SymLinkHelper.Initialize(modDataPath);
+            SymLinkHelper.Initialize(fs.BasePath);
 
             if (!ShouldUseHardLink() && !SymLinkHelper.AreSymLinksSupported)
             {
