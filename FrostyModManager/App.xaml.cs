@@ -228,7 +228,7 @@ namespace FrostyModManager
                     });
                 }
             }
-            catch (Exception e)
+            catch
             {
                 // System.Threading.Tasks.Task.Run(() =>
                 // {

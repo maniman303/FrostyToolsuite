@@ -233,7 +233,7 @@ namespace Frosty.Core.Windows
             AssetInstanceInfo selectedObj = instancesListView.SelectedItem as AssetInstanceInfo;
             dynamic obj = selectedObj.Data;
 
-            FrostyTaskWindow.Show(this, "Duplicating instance", "This may take a while for large assets", (FrostyTaskWindow owner) =>
+            FrostyTaskWindow.Show(this, "Duplicating instance", "This may take a while for large assets", (logger) =>
             {
                 FrostyClipboard.Current.SetData(obj);
                 obj = FrostyClipboard.Current.GetData(asset, entry);

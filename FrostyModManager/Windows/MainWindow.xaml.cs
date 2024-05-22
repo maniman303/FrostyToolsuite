@@ -340,7 +340,7 @@ namespace FrostyModManager
                 App.Logger.Log("Custom Mods Directory does not exist, using default instead");
             }
 
-            FrostyTaskWindow.Show("Loading Mods", "", (task) =>
+            FrostyTaskWindow.Show("Loading Mods", "", (logger) =>
             {
                 if (!modsDir.Exists)
                     Directory.CreateDirectory(modsDir.FullName);
@@ -378,7 +378,7 @@ namespace FrostyModManager
                             File.Delete(fi.FullName.Replace(".fbmod", "_01.archive"));
                         }
                     }
-                    task.TaskLogger.Log("progress:" + currentMod++ / (float)totalMods * 100d);
+                    logger.Log("progress:" + currentMod++ / (float)totalMods * 100d);
                 });
                 // load collections
                 Parallel.ForEach(modsDir.EnumerateFiles(), fi =>
@@ -387,7 +387,7 @@ namespace FrostyModManager
                     {
                         AddCollection(fi.FullName, 0);
                     }
-                    task.TaskLogger.Log("progress:" + currentMod++ / (float)totalMods * 100d);
+                    logger.Log("progress:" + currentMod++ / (float)totalMods * 100d);
                 });
             });
             availableMods = availableMods.OrderBy(o => o.Filename).ToList();
@@ -718,25 +718,25 @@ namespace FrostyModManager
 
             // launch
             int retCode = 0;
-            FrostyTaskWindow.Show("Installing mods", "", (task) =>
+            FrostyTaskWindow.Show("Installing mods", "", (logger) =>
             {
                 try
                 {
                     foreach (var executionAction in App.PluginManager.ExecutionActions)
-                        executionAction.PreLaunchAction(task.TaskLogger, PluginManagerType.ModManager, cancelToken.Token);
+                        executionAction.PreLaunchAction(logger, PluginManagerType.ModManager, cancelToken.Token);
 
                     FrostyModExecutor modExecutor = new FrostyModExecutor();
-                    retCode = modExecutor.Install(fs, cancelToken.Token, task.TaskLogger, modsDir.FullName, App.SelectedPack, modPaths.ToArray());
+                    retCode = modExecutor.Install(fs, cancelToken.Token, logger, modsDir.FullName, App.SelectedPack, modPaths.ToArray());
 
                     foreach (var executionAction in App.PluginManager.ExecutionActions)
-                        executionAction.PostLaunchAction(task.TaskLogger, PluginManagerType.ModManager, cancelToken.Token);
+                        executionAction.PostLaunchAction(logger, PluginManagerType.ModManager, cancelToken.Token);
                 }
                 catch (OperationCanceledException)
                 {
                     retCode = -1;
 
                     foreach (var executionAction in App.PluginManager.ExecutionActions)
-                        executionAction.PostLaunchAction(task.TaskLogger, PluginManagerType.ModManager, cancelToken.Token);
+                        executionAction.PostLaunchAction(logger, PluginManagerType.ModManager, cancelToken.Token);
 
                     // process was cancelled
                     App.Logger.Log("Launch Cancelled");
@@ -847,25 +847,25 @@ namespace FrostyModManager
 
             // launch
             int retCode = 0;
-            FrostyTaskWindow.Show("Launching", "", (task) =>
+            FrostyTaskWindow.Show("Launching", "", (logger) =>
             {
                 try
                 {
                     foreach (var executionAction in App.PluginManager.ExecutionActions)
-                        executionAction.PreLaunchAction(task.TaskLogger, PluginManagerType.ModManager, cancelToken.Token);
+                        executionAction.PreLaunchAction(logger, PluginManagerType.ModManager, cancelToken.Token);
 
                     FrostyModExecutor modExecutor = new FrostyModExecutor();
-                    retCode = modExecutor.Run(fs, cancelToken.Token, task.TaskLogger, modsDir.FullName, App.SelectedPack, additionalArgs.Trim(), modPaths.ToArray());
+                    retCode = modExecutor.Run(fs, cancelToken.Token, logger, modsDir.FullName, App.SelectedPack, additionalArgs.Trim(), modPaths.ToArray());
 
                     foreach (var executionAction in App.PluginManager.ExecutionActions)
-                        executionAction.PostLaunchAction(task.TaskLogger, PluginManagerType.ModManager, cancelToken.Token);
+                        executionAction.PostLaunchAction(logger, PluginManagerType.ModManager, cancelToken.Token);
                 }
                 catch (OperationCanceledException)
                 {
                     retCode = -1;
 
                     foreach (var executionAction in App.PluginManager.ExecutionActions)
-                        executionAction.PostLaunchAction(task.TaskLogger, PluginManagerType.ModManager, cancelToken.Token);
+                        executionAction.PostLaunchAction(logger, PluginManagerType.ModManager, cancelToken.Token);
 
                     // process was cancelled
                     App.Logger.Log("Launch Cancelled");
@@ -1141,14 +1141,14 @@ namespace FrostyModManager
 
             PackManifest packManifest = null;
 
-            FrostyTaskWindow.Show("Installing Mods", "", (task) =>
+            FrostyTaskWindow.Show("Installing Mods", "", (logger) =>
             {
                 List<string> collections = new List<string>();
 
                 foreach (string filename in filenames)
                 {
                     FileInfo fi = new FileInfo(filename);
-                    task.Update(fi.Name);
+                    logger.Log(fi.Name);
 
                     try
                     {

@@ -1107,7 +1107,7 @@ namespace Frosty.ModSupport
                 }
                 else if (ShouldCleanModDir(modDataPath))
                 {
-                    Logger.Log("Reseting ModData");
+                    Logger.Log("Reseting ModData, it can take a few minutes");
                     FileLogger.Info("Reseting ModData.");
                     SymLinkHelper.DeleteDirectorySafe(modDataPath);
                     FileLogger.Info("Reseting ModData finished.");
@@ -1205,7 +1205,7 @@ namespace Frosty.ModSupport
                 ProcessModResources(runtimeResources);
 
                 cancelToken.ThrowIfCancellationRequested();
-                Logger.Log("Cleaning Up ModData");
+                Logger.Log("Cleaning Up ModData, it can take a few minutes");
                 App.Logger.Log("Cleaning Up ModData");
                 FileLogger.Info("Cleaning Up ModData.");
 

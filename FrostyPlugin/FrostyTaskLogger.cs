@@ -16,7 +16,7 @@ namespace Frosty.Core
                 if (text.StartsWith("progress:"))
                 {
                     text = text.Replace("progress:", "");
-                    task.Update(null, double.Parse(text));
+                    task.Update(null, double.Parse(text.Trim()));
                 }
                 else
                 {

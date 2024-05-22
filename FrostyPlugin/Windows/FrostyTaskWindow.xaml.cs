@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -13,7 +12,7 @@ using System.Windows.Shell;
 
 namespace Frosty.Core.Windows
 {
-    public delegate void FrostyTaskCallback(FrostyTaskWindow owner);
+    public delegate void FrostyTaskCallback(ILogger logger);
     public delegate void FrostyTaskCancelCallback(FrostyTaskWindow owner);
 
     /// <summary>
@@ -138,7 +137,7 @@ namespace Frosty.Core.Windows
 
             bw.DoWork += (s, evt) =>
             {
-                _callback(this);
+                _callback(TaskLogger);
             };
 
             bw.RunWorkerCompleted += (s, evt) =>

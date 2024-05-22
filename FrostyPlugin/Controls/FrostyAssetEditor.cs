@@ -142,19 +142,19 @@ namespace Frosty.Core.Controls
         {
             if (entry is EbxAssetEntry)
             {
-                FrostyTaskWindow.Show("Opening Asset", "", (task) =>
+                FrostyTaskWindow.Show("Opening Asset", "", (logger) =>
                 {
                     asset = LoadAsset(entry as EbxAssetEntry);
 
                     int totalCount = asset.Dependencies.Count();
                     int index = 0;
 
-                    task.Update("Loading dependencies");
+                    logger.Log("Loading dependencies");
                     foreach (Guid guid in asset.Dependencies)
                     {
                         EbxAssetEntry dependentEntry = App.AssetManager.GetEbxEntry(guid);
 
-                        task.Update(progress: (index++ / (double)totalCount) * 100.0d);
+                        logger.Log($"progress:{(index++ / (double)totalCount) * 100.0d}");
 
                         if (dependentEntry != null)
                             dependentObjects.Add(guid, App.AssetManager.GetEbx(dependentEntry));

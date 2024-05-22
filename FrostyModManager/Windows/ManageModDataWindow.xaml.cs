@@ -139,13 +139,13 @@ namespace FrostyModManager
             try
             {
                 // run mod applying process
-                FrostyTaskWindow.Show("Launching", "", (task) =>
+                FrostyTaskWindow.Show("Launching", "", (logger) =>
                 {
                     App.Logger.Log("Launching");
                     try
                     {
                         foreach (var executionAction in App.PluginManager.ExecutionActions)
-                            executionAction.PreLaunchAction(task.TaskLogger, PluginManagerType.ModManager, cancelToken.Token);
+                            executionAction.PreLaunchAction(logger, PluginManagerType.ModManager, cancelToken.Token);
 
                         FrostyModExecutor.LaunchGame(Config.Get<string>("GamePath", "", ConfigScope.Game, ProfilesLibrary.ProfileName) + "\\", modDirName, modDataPath, Config.Get<string>("CommandLineArgs", "", ConfigScope.Game));
 
