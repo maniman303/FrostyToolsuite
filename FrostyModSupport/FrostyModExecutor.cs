@@ -2355,6 +2355,8 @@ namespace Frosty.ModSupport
 
                 files = files.Where(f => ShouldFileBeRecursiveDeleted(f)).ToList();
 
+                FileLogger.Info($"Removing {files.Count} files.");
+
                 var batches = BatchesHelper.Split(files, SymLinkHelper.BatchSize);
 
                 foreach (var batch in batches)

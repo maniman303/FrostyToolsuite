@@ -227,25 +227,26 @@ namespace Frosty.Core
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c {rmPath} \"{linuxPath}\"",
+                    FileName = $"Z:{rmPath}",
+                    Arguments = $"\"{linuxPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
             };
 
             proc.Start();
-            proc.WaitForExit();
 
             for (int i = 0; i < waitLoops; i++)
             {
                 if (!Directory.Exists(path))
                 {
-                    break;
+                    return;
                 }
 
                 Thread.Sleep(waitTime);
             }
+
+            FileLogger.Info($"Could not determine if directory sym link '{path}' was removed.");
         }
 
         public static void DeleteFileSafe(string path)
@@ -272,25 +273,26 @@ namespace Frosty.Core
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c {rmPath} \"{linuxPath}\"",
+                    FileName = $"Z:{rmPath}",
+                    Arguments = $"\"{linuxPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
             };
 
             proc.Start();
-            proc.WaitForExit();
 
             for (int i = 0; i < waitLoops; i++)
             {
                 if (!File.Exists(path))
                 {
-                    break;
+                    return;
                 }
 
                 Thread.Sleep(waitTime);
             }
+
+            FileLogger.Info($"Could not determine if file sym link '{path}' was removed.");
         }
 
         public static bool DoesDirectoryContainSymLinks(string path)
@@ -381,9 +383,15 @@ namespace Frosty.Core
 
         public static void CreateSymlinkLinux(string source, string destination)
         {
-            var isFile = File.Exists(source);
+            if (string.IsNullOrWhiteSpace(source) ||  string.IsNullOrWhiteSpace(destination))
+            {
+                FileLogger.Info($"Symbolic Link aborted. Invalid source '{source}' or destination '{destination}'.");
+                return;
+            }
 
-            if (!isFile && !Directory.Exists(source))
+            var isDirectory = Directory.Exists(source);
+
+            if (!isDirectory && !File.Exists(source))
             {
                 FileLogger.Info($"Symbolic Link aborted. Source '{source}' does not exists.");
                 return;
@@ -401,30 +409,30 @@ namespace Frosty.Core
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c {lnPath} -s \"{sourceLinux}\" \"{destinationLinux}\"",
+                    FileName = $"Z:{lnPath}",
+                    Arguments = $"-s \"{sourceLinux}\" \"{destinationLinux}\"",
                     UseShellExecute = false,
-                    RedirectStandardOutput = true,
                     CreateNoWindow = true
                 }
             };
 
             proc.Start();
-            proc.WaitForExit();
 
             for (int i = 0; i < waitLoops; i++)
             {
-                if (isFile && File.Exists(destination))
+                if (isDirectory && Directory.Exists(destination))
                 {
-                    break;
+                    return;
                 }
-                else if (!isFile && Directory.Exists(destination))
+                else if (!isDirectory && File.Exists(destination))
                 {
-                    break;
+                    return;
                 }
 
                 Thread.Sleep(waitTime);
             }
+
+            FileLogger.Info($"Could not determine if sym link was created for source '{source}' and destination '{destination}'");
         }
 
         public static bool IsSymbolicLink(string path)
@@ -702,11 +710,11 @@ namespace Frosty.Core
 
             if (ex == null)
             {
-                FileLogger.Info($"Retrieved empty Aggregate Exception. Details: {ax.Message}");
+                FileLogger.Info($"Retrieved empty Aggregate Exception. Details:\n{ax}");
                 return;
             }
 
-            FileLogger.Info($"Retrieved Aggregate Exception with following exception. Details: {ex.Message}");
+            FileLogger.Info($"Retrieved Aggregate Exception with following exception. Details:\n{ex}");
 
             throw ex;
         }

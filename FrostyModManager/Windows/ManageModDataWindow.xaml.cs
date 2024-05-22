@@ -103,7 +103,7 @@ namespace FrostyModManager
             {
                 try
                 {
-                    Directory.Delete(selectedPack.Path, true);
+                    SymLinkHelper.DeleteDirectorySafe(selectedPack.Path);
                     listPacks();
                 }
                 catch (IOException)
