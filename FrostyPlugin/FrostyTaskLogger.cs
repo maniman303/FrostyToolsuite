@@ -8,6 +8,7 @@ namespace Frosty.Core
     {
         private FrostyTaskWindow task;
         private Progress<string> progress = new Progress<string>();
+        private IProgress<string> progressReporter => progress;
 
         public FrostyTaskLogger(FrostyTaskWindow inTask)
         {
@@ -15,7 +16,7 @@ namespace Frosty.Core
             progress.ProgressChanged += (s, text) => {
                 if (text.StartsWith("progress:"))
                 {
-                    text = text.Replace("progress:", "");
+                    text = text.Replace("progress:", "").Trim();
                     task.Update(null, double.Parse(text.Trim()));
                 }
                 if (text.Contains("~"))
@@ -50,15 +51,15 @@ namespace Frosty.Core
 
         public void Log(string text, params object[] vars)
         {
-            var progInt = (IProgress<string>)progress;
+            text = text.Trim();
 
             if (text.StartsWith("progress:"))
             {
-                progInt.Report(text);
+                progressReporter.Report(text);
             }
             else
             {
-                progInt.Report(string.Format(text, vars));
+                progressReporter.Report(string.Format(text, vars));
             }
         }
 

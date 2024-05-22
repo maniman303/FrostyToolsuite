@@ -197,7 +197,7 @@ namespace Frosty.ModSupport
         private FileSystem fs;
         private ResourceManager rm;
         private AssetManager am;
-        private ILogger logger;
+        private FrostyTaskLogger logger;
 
         private List<string> addedSuperBundles = new List<string>();
 
@@ -217,7 +217,7 @@ namespace Frosty.ModSupport
         private Dictionary<int, Dictionary<int, Dictionary<uint, CatResourceEntry>>> resources = new Dictionary<int, Dictionary<int, Dictionary<uint, CatResourceEntry>>>();
         private string modDirName = "ModData";
 
-        public ILogger Logger { get => logger; set => logger = value; }
+        public FrostyTaskLogger Logger { get => logger; set => logger = value; }
 
         private Dictionary<int, Dictionary<uint, CatResourceEntry>> LoadCatalog(string filename, out int catFileHash)
         {
@@ -246,7 +246,7 @@ namespace Frosty.ModSupport
         {
             if (total > 0)
             {
-                Logger.Log("progress:" + current / (float)total * 100d);
+                Logger.LogProgress(current / (float)total * 100d);
             }
         }
 
@@ -1898,7 +1898,7 @@ namespace Frosty.ModSupport
             return 0;
         }
 
-        public int Install(FileSystem inFs, CancellationToken cancelToken, ILogger inLogger, string rootPath, string modPackName, params string[] modPaths)
+        public int Install(FileSystem inFs, CancellationToken cancelToken, FrostyTaskLogger inLogger, string rootPath, string modPackName, params string[] modPaths)
         {
             modDirName = "ModData\\" + modPackName;
             cancelToken.ThrowIfCancellationRequested();
@@ -1924,7 +1924,7 @@ namespace Frosty.ModSupport
             return 0;
         }
 
-        public int Run(FileSystem inFs, CancellationToken cancelToken, ILogger inLogger, string rootPath, string modPackName, string additionalArgs, params string[] modPaths)
+        public int Run(FileSystem inFs, CancellationToken cancelToken, FrostyTaskLogger inLogger, string rootPath, string modPackName, string additionalArgs, params string[] modPaths)
         {
             modDirName = "ModData\\" + modPackName;
             cancelToken.ThrowIfCancellationRequested();

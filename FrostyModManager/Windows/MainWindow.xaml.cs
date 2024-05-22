@@ -287,13 +287,31 @@ namespace FrostyModManager
 
         private static int manifestVersion = 1;
 
+        private Progress<string> DropProgress;
+
+        private IProgress<string> DropProgressReporter => DropProgress;
+
         public MainWindow()
         {
             InitializeComponent();
+            FileLogger.Init();
+
             TaskbarItemInfo = new System.Windows.Shell.TaskbarItemInfo();
 
             tabContent.HeaderControl = tabControl;
             availableModsTabContent.HeaderControl = availableModsTabControl;
+
+            DropProgress = new Progress<string>();
+
+            DropProgress.ProgressChanged += (s, arg) =>
+            {
+                if (string.IsNullOrWhiteSpace(arg))
+                {
+                    return;
+                }
+
+                FrostyWindow_Drop(arg);
+            };
 
             AllowDrop = true;
 
@@ -303,8 +321,6 @@ namespace FrostyModManager
                 launchButton.IsEnabled = false;
             }
         }
-
-        
 
         private void FrostyWindow_FrostyLoaded(object sender, EventArgs e)
         {
@@ -1116,65 +1132,71 @@ namespace FrostyModManager
             imagePanel.Visibility = Visibility.Collapsed;
         }
 
+        protected override void OnDragEnter(DragEventArgs e)
+        {
+            base.OnDragEnter(e);
+
+            FileLogger.Info($"Default drag and drop effect: {e.Effects}");
+
+            e.Effects = DragDropEffects.Copy;
+        }
+
         protected override void OnDrop(DragEventArgs e)
         {
             base.OnDrop(e);
 
-            FrostyWindow_Drop(e);
+            if (e.Data.GetDataPresent(DataFormats.FileDrop, true))
+            {
+                var dataObj = e.Data.GetData(DataFormats.FileDrop, true);
+
+                if (dataObj == null)
+                {
+                    FileLogger.Info("Drop data is null.");
+                    return;
+                }
+
+                var filenames = (string[])dataObj;
+
+                if (filenames.Length <= 0)
+                {
+                    FileLogger.Info("Drop data is empty.");
+                    return;
+                }
+
+                foreach (var filename in filenames)
+                {
+                    FileLogger.Info($"Drop file received '{filename}'.");
+                }
+
+                var report = string.Join("?", filenames);
+
+                DropProgressReporter.Report(report);
+            }
+            else if (e.Data.GetFormats().Any(f => f == "FileContents"))
+            {
+                FileLogger.Info("Cannot import mod files that have not been extracted.");
+
+                if (OperatingSystemHelper.IsWine())
+                {
+                    return;
+                }
+
+                SystemSounds.Hand.Play();
+
+                FrostyMessageBox.Show("Cannot import mod files that have not been extracted", "Frosty Mod Manager");
+            }
         }
 
-        private void FrostyWindow_Drop(DragEventArgs e)
+        private void FrostyWindow_Drop(string joinedFileNames)
         {
-            FileLogger.Init();
-
             FileLogger.Info("Starting drop operation.");
 
-            try
-            {
-                if (e.Data.GetDataPresent(DataFormats.FileDrop, true))
-                {
-                    var dataObj = e.Data.GetData(DataFormats.FileDrop, true);
+            var fileNames = joinedFileNames.Split('?');
 
-                    if (dataObj == null)
-                    {
-                        FileLogger.Info("Drop data is null.");
-                        return;
-                    }
+            InstallMods(fileNames);
 
-                    var filenames = (string[])dataObj;
-
-                    if (filenames.Length <= 0)
-                    {
-                        FileLogger.Info("Drop data is empty.");
-                        return;
-                    }
-
-                    foreach (var filename in filenames)
-                    {
-                        FileLogger.Info($"Drop file received '{filename}'.");
-                    }
-
-                    InstallMods(filenames);
-
-                    ICollectionView view = CollectionViewSource.GetDefaultView(availableModsList.ItemsSource);
-                    view.Refresh();
-                }
-                else if (e.Data.GetFormats().Any(f => f == "FileContents"))
-                {
-                    if (!OperatingSystemHelper.IsWine())
-                    {
-                        SystemSounds.Hand.Play();
-                    }
-
-                    FileLogger.Info("Cannot import mod files that have not been extracted.");
-
-                    FrostyMessageBox.Show("Cannot import mod files that have not been extracted", "Frosty Mod Manager");
-                }
-            }
-            catch (Exception ex)
-            {
-                FileLogger.Info($"Execption on drop: {ex.Message}");
-            }
+            ICollectionView view = CollectionViewSource.GetDefaultView(availableModsList.ItemsSource);
+            view.Refresh();
         }
 
         private void InstallMods(string[] filenames)
