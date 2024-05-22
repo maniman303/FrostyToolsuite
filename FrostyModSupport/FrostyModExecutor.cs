@@ -2355,12 +2355,20 @@ namespace Frosty.ModSupport
 
                 files = files.Where(f => ShouldFileBeRecursiveDeleted(f)).ToList();
 
-                var batches = BatchesHelper.Split(files, SymLinkHelper.BatcheSize);
+                var batches = BatchesHelper.Split(files, SymLinkHelper.BatchSize);
 
                 foreach (var batch in batches)
                 {
                     var tasks = batch.Select(f => Task.Run(() => SymLinkHelper.DeleteFileSafe(f))).ToArray();
-                    Task.WaitAll(tasks);
+                    
+                    try
+                    {
+                        Task.WaitAll(tasks);
+                    }
+                    catch (AggregateException ax)
+                    {
+                        SymLinkHelper.HandleAggregateException(ax);
+                    }
                 }
             }
         }
@@ -2484,13 +2492,20 @@ namespace Frosty.ModSupport
 
         private void CreateSymbolicLinksStructureLinux(List<SymLinkStruct> cmdArgs)
         {
-            var batches = BatchesHelper.Split(cmdArgs, SymLinkHelper.BatcheSize);
+            var batches = BatchesHelper.Split(cmdArgs, SymLinkHelper.BatchSize);
 
             foreach (var batch in batches)
             {
                 var symTasks = batch.Select(c => Task.Run(() => SymLinkHelper.CreateSymlinkLinux(c.src, c.dest))).ToArray();
 
-                Task.WaitAll(symTasks);
+                try
+                {
+                    Task.WaitAll(symTasks);
+                }
+                catch (AggregateException ax)
+                {
+                    SymLinkHelper.HandleAggregateException(ax);
+                }
             }
         }
 

@@ -800,8 +800,9 @@ namespace FrostyModManager
                         i = 99;
                         break;
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        FileLogger.Info($"Exception on clipboard set. Details: {ex.Message}");
                         clipboardSuccess = false;
                     }
                 }

@@ -13,9 +13,9 @@ namespace Frosty.Core
 {
     public static class SymLinkHelper
     {
-        public const int BatcheSize = 8;
+        public const int BatchSize = 8;
 
-        private const string linuxSufix = "linux_result";
+        private const string linuxSufix = "linux";
         private const string linuxTemp = "linux_temp";
 
         private const string registryPath = "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Session Manager\\Environment";
@@ -149,32 +149,56 @@ namespace Frosty.Core
 
                 FileLogger.Info($"Removing {files.Count} files.");
 
-                var fileBatches = BatchesHelper.Split(files, BatcheSize);
+                var fileBatches = BatchesHelper.Split(files, BatchSize);
                 foreach (var fileBatch in fileBatches)
                 {
                     var fileTasks = fileBatch.Select(f => Task.Run(() => DeleteFileSafe(f))).ToArray();
-                    Task.WaitAll(fileTasks);
+
+                    try
+                    {
+                        Task.WaitAll(fileTasks);
+                    }
+                    catch (AggregateException ae)
+                    {
+                        HandleAggregateException(ae);
+                    }
                 }
 
                 var dirSymLinks = new List<string>();
-                var dirBatches = BatchesHelper.Split(dirs, BatcheSize);
+                var dirBatches = BatchesHelper.Split(dirs, BatchSize);
                 foreach (var dirBatch in dirBatches)
                 {
                     var dirTasks = dirBatch.Select(d => Task.Run(() => {
                         return IsSymbolicLink(d) ? d : string.Empty;
                     })).ToArray();
-                    Task.WaitAll(dirTasks);
+                    
+                    try
+                    {
+                        Task.WaitAll(dirTasks);
+                    }
+                    catch (AggregateException ax)
+                    {
+                        HandleAggregateException(ax);
+                    }
 
                     dirSymLinks.AddRange(dirTasks.Select(d => d.Result).Where(d => !string.IsNullOrWhiteSpace(d)));
                 }
 
                 FileLogger.Info($"Removing {dirSymLinks.Count} directory symbolic links.");
 
-                dirBatches = BatchesHelper.Split(dirSymLinks, BatcheSize);
+                dirBatches = BatchesHelper.Split(dirSymLinks, BatchSize);
                 foreach (var dirBatch in dirBatches)
                 {
                     var dirTasks = dirBatch.Select(d => Task.Run(() => DeleteDirectorySymLink(d))).ToArray();
-                    Task.WaitAll(dirTasks);
+
+                    try
+                    {
+                        Task.WaitAll(dirTasks);
+                    }
+                    catch (AggregateException ax)
+                    {
+                        HandleAggregateException(ax);
+                    }
                 }
 
                 dirs.Clear();
@@ -294,7 +318,9 @@ namespace Frosty.Core
 
                 realDirs.Clear();
 
-                var fileBatches = BatchesHelper.Split(files, BatcheSize);
+                FileLogger.Info($"Scaning {files.Count} files.");
+
+                var fileBatches = BatchesHelper.Split(files, BatchSize);
                 foreach (var fileBatch in fileBatches)
                 {
                     var fileTasks = fileBatch.Select(f => Task.Run(() =>
@@ -302,7 +328,14 @@ namespace Frosty.Core
                         return IsSymbolicLink(f);
                     })).ToArray();
 
-                    Task.WaitAll(fileTasks);
+                    try
+                    {
+                        Task.WaitAll(fileTasks);
+                    }
+                    catch (AggregateException ax)
+                    {
+                        HandleAggregateException(ax);
+                    }
 
                     foreach (var ft in fileTasks)
                     {
@@ -313,18 +346,27 @@ namespace Frosty.Core
                     }
                 }
 
-                var dirBatches = BatchesHelper.Split(dirs, BatcheSize);
+                FileLogger.Info($"Scaning {dirs.Count} directories.");
+
+                var dirBatches = BatchesHelper.Split(dirs, BatchSize);
                 foreach (var dirBatch in dirBatches)
                 {
                     var dirTasks = dirBatch.Select(d => Task.Run(() => {
                         return IsSymbolicLink(d) ? string.Empty : d;
                     })).ToArray();
 
-                    Task.WaitAll(dirTasks);
+                    try
+                    {
+                        Task.WaitAll(dirTasks);
+                    }
+                    catch (AggregateException ax)
+                    {
+                        HandleAggregateException(ax);
+                    }
 
                     foreach (var dt in dirTasks)
                     {
-                        if (dt.Result == string.Empty)
+                        if (string.IsNullOrWhiteSpace(dt.Result))
                         {
                             return true;
                         }
@@ -431,7 +473,7 @@ namespace Frosty.Core
                 return false;
             }
 
-            var resSufix = $".{DateTime.Now:ddMMHHmmss}.{linuxSufix}";
+            var resSufix = $".{Task.CurrentId}.{DateTime.Now:ssfff}.{linuxSufix}";
             var resFilePath = $"{path}{resSufix}";
 
             var linuxPath = GetLinuxPath(path);
@@ -652,6 +694,21 @@ namespace Frosty.Core
             FileLogger.Info("Registry updated.");
 
             return true;
+        }
+
+        public static void HandleAggregateException(AggregateException ax)
+        {
+            var ex = ax.Flatten().InnerExceptions.FirstOrDefault();
+
+            if (ex == null)
+            {
+                FileLogger.Info($"Retrieved empty Aggregate Exception. Details: {ax.Message}");
+                return;
+            }
+
+            FileLogger.Info($"Retrieved Aggregate Exception with following exception. Details: {ex.Message}");
+
+            throw ex;
         }
 
         public static void CreateHardLink(string source, string destination)
