@@ -295,12 +295,16 @@ namespace FrostyModManager
             tabContent.HeaderControl = tabControl;
             availableModsTabContent.HeaderControl = availableModsTabControl;
 
+            AllowDrop = true;
+
             if (OperatingSystemHelper.IsWine())
             {
                 launchButton.Visibility = Visibility.Collapsed;
                 launchButton.IsEnabled = false;
             }
         }
+
+        
 
         private void FrostyWindow_FrostyLoaded(object sender, EventArgs e)
         {
@@ -1112,30 +1116,73 @@ namespace FrostyModManager
             imagePanel.Visibility = Visibility.Collapsed;
         }
 
-        private void FrostyWindow_Drop(object sender, DragEventArgs e)
+        protected override void OnDrop(DragEventArgs e)
         {
-            if (OperatingSystemHelper.IsWine())
-            {
-                return;
-            }
+            base.OnDrop(e);
 
-            if (e.Data.GetDataPresent(DataFormats.FileDrop, true))
-            {
-                string[] filenames = (string[])e.Data.GetData(DataFormats.FileDrop, true);
-                InstallMods(filenames);
+            FrostyWindow_Drop(e);
+        }
 
-                ICollectionView view = CollectionViewSource.GetDefaultView(availableModsList.ItemsSource);
-                view.Refresh();
-            }
-            else if (e.Data.GetFormats().Any(f => f == "FileContents"))
+        private void FrostyWindow_Drop(DragEventArgs e)
+        {
+            FileLogger.Init();
+
+            FileLogger.Info("Starting drop operation.");
+
+            try
             {
-                SystemSounds.Hand.Play();
-                FrostyMessageBox.Show("Cannot import mod files that have not been extracted", "Frosty Mod Manager");
+                if (e.Data.GetDataPresent(DataFormats.FileDrop, true))
+                {
+                    var dataObj = e.Data.GetData(DataFormats.FileDrop, true);
+
+                    if (dataObj == null)
+                    {
+                        FileLogger.Info("Drop data is null.");
+                        return;
+                    }
+
+                    var filenames = (string[])dataObj;
+
+                    if (filenames.Length <= 0)
+                    {
+                        FileLogger.Info("Drop data is empty.");
+                        return;
+                    }
+
+                    foreach (var filename in filenames)
+                    {
+                        FileLogger.Info($"Drop file received '{filename}'.");
+                    }
+
+                    InstallMods(filenames);
+
+                    ICollectionView view = CollectionViewSource.GetDefaultView(availableModsList.ItemsSource);
+                    view.Refresh();
+                }
+                else if (e.Data.GetFormats().Any(f => f == "FileContents"))
+                {
+                    if (!OperatingSystemHelper.IsWine())
+                    {
+                        SystemSounds.Hand.Play();
+                    }
+
+                    FileLogger.Info("Cannot import mod files that have not been extracted.");
+
+                    FrostyMessageBox.Show("Cannot import mod files that have not been extracted", "Frosty Mod Manager");
+                }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Info($"Execption on drop: {ex.Message}");
             }
         }
 
         private void InstallMods(string[] filenames)
         {
+            FileLogger.Init();
+
+            FileLogger.Info("Starting external mods instalation.");
+
             IFrostyMod lastInstalledMod = null;
             List<ImportErrorInfo> errors = new List<ImportErrorInfo>();
 
@@ -1147,13 +1194,22 @@ namespace FrostyModManager
 
                 foreach (string filename in filenames)
                 {
-                    FileInfo fi = new FileInfo(filename);
-                    logger.Log(fi.Name);
+                    FileLogger.Info($"Installing external mod file '{filename}'.");
+
+                    var newFileName = filename;
+                    var fileDirectory = Path.GetDirectoryName(newFileName);
+                    var extension = Path.GetExtension(newFileName).ToLower();
+
+                    logger.Log(Path.GetFileName(newFileName));
+
+                    FileLogger.Info("Retrieved file information.");
 
                     try
                     {
-                        if (IsCompressed(fi))
+                        if (IsCompressed(newFileName))
                         {
+                            FileLogger.Info("File is compressed.");
+
                             List<string> mods = new List<string>();
                             List<int> format = new List<int>();
                             List<string> archives = new List<string>();
@@ -1161,14 +1217,14 @@ namespace FrostyModManager
 
                             // create decompressor
                             IDecompressor decompressor = null;
-                            if (fi.Extension == ".rar") decompressor = new RarDecompressor();
-                            else if (fi.Extension == ".zip" || fi.Extension == ".fbpack") decompressor = new ZipDecompressor();
-                            else if (fi.Extension == ".7z") decompressor = new SevenZipDecompressor();
+                            if (extension == ".rar") decompressor = new RarDecompressor();
+                            else if (extension == ".zip" || extension == ".fbpack") decompressor = new ZipDecompressor();
+                            else if (extension == ".7z") decompressor = new SevenZipDecompressor();
 
                             try
                             {
                                 // search out fbmods in archive
-                                decompressor.OpenArchive(filename);
+                                decompressor.OpenArchive(newFileName);
                                 foreach (CompressedFileInfo compressedFi in decompressor.EnumerateFiles())
                                 {
 
@@ -1240,13 +1296,13 @@ namespace FrostyModManager
                             }
                             catch
                             {
-                                errors.Add(new ImportErrorInfo() { filename = fi.Name, error = "Failed to read Archive." });
+                                errors.Add(new ImportErrorInfo() { filename = Path.GetFileName(newFileName), error = "Failed to read Archive." });
                             }
 
                             if (mods.Count == 0 && fbpacks == 0)
                             {
                                 // no point continuing with this archive
-                                errors.Add(new ImportErrorInfo() { filename = fi.Name, error = "Archive contains no installable mods." });
+                                errors.Add(new ImportErrorInfo() { filename = Path.GetFileName(newFileName), error = "Archive contains no installable mods." });
                                 continue;
                             }
 
@@ -1292,7 +1348,7 @@ namespace FrostyModManager
                             if (mods.Count > 0)
                             {
                                 // now actually decompress files
-                                decompressor.OpenArchive(filename);
+                                decompressor.OpenArchive(newFileName);
                                 foreach (CompressedFileInfo compressedFi in decompressor.EnumerateFiles())
                                 {
                                     if (mods.Contains(compressedFi.Filename) || archives.Contains(compressedFi.Filename))
@@ -1304,20 +1360,22 @@ namespace FrostyModManager
                                 // and add them to the mod manager
                                 for (int i = 0; i < mods.Count; i++)
                                 {
-                                    fi = new FileInfo(Path.Combine(modsDir.FullName, mods[i]));
-                                    lastInstalledMod = AddMod(fi.FullName, format[i]);
+                                    newFileName = Path.Combine(modsDir.FullName, mods[i]);
+                                    lastInstalledMod = AddMod(newFileName, format[i]);
                                 }
                             }
                         }
-                        else if (fi.Extension == ".daimod")
+                        else if (extension == ".daimod")
                         {
+                            FileLogger.Info("File is daimod.");
+
                             // special handling for DAI mod files
-                            using (NativeReader reader = new NativeReader(new FileStream(fi.FullName, FileMode.Open)))
+                            using (NativeReader reader = new NativeReader(new FileStream(newFileName, FileMode.Open)))
                             {
                                 string magic = reader.ReadSizedString(8);
                                 if (magic != "DAIMODV2")
                                 {
-                                    errors.Add(new ImportErrorInfo() { filename = fi.Name, error = "File is not a valid DAI Mod." });
+                                    errors.Add(new ImportErrorInfo() { filename = Path.GetFileName(newFileName), error = "File is not a valid DAI Mod." });
                                     continue;
                                 }
 
@@ -1473,11 +1531,11 @@ namespace FrostyModManager
                                 modObject.AddValue("resources", resourcesList);
                                 modObject.AddValue("actions", actionsList);
 
-                                using (DbWriter writer = new DbWriter(new FileStream(Path.Combine(modsDir.FullName, fi.Name.Replace(".daimod", ".fbmod")), FileMode.Create)))
+                                using (DbWriter writer = new DbWriter(new FileStream(Path.Combine(modsDir.FullName, Path.GetFileName(newFileName).Replace(".daimod", ".fbmod")), FileMode.Create)))
                                 {
                                     writer.Write(modObject);
                                 }
-                                using (NativeWriter writer = new NativeWriter(new FileStream(Path.Combine(modsDir.FullName, fi.Name.Replace(".daimod", "_01.archive")), FileMode.Create)))
+                                using (NativeWriter writer = new NativeWriter(new FileStream(Path.Combine(modsDir.FullName, Path.GetFileName(newFileName).Replace(".daimod", "_01.archive")), FileMode.Create)))
                                 {
                                     for (int i = 0; i < resources.Count; i++)
                                     {
@@ -1486,48 +1544,55 @@ namespace FrostyModManager
                                     }
                                 }
 
-                                fi = new FileInfo(Path.Combine(modsDir.FullName, fi.Name.Replace(".daimod", ".fbmod")));
-                                lastInstalledMod = AddMod(fi.FullName, 0);
+                                newFileName = Path.Combine(modsDir.FullName, Path.GetFileName(newFileName).Replace(".daimod", ".fbmod"));
+                                lastInstalledMod = AddMod(newFileName, 0);
                             }
                         }
-                        else if (fi.Extension == ".fbcollection")
+                        else if (extension == ".fbcollection")
                         {
-                            collections.Add(fi.Name);
+                            FileLogger.Info("File is fbcollection.");
+                            collections.Add(Path.GetFileName(newFileName));
                         }
                         else
                         {
                             // dont allow any files without fbmod extension
-                            if (fi.Extension != ".fbmod")
+                            if (extension != ".fbmod")
                             {
-                                if (fi.Extension == ".archive")
+                                if (extension == ".archive")
+                                {
                                     continue;
+                                }
 
-                                errors.Add(new ImportErrorInfo() { filename = fi.Name, error = "File is not a valid Frosty Mod." });
+                                FileLogger.Info("File is not fbmod.");
+
+                                errors.Add(new ImportErrorInfo() { filename = Path.GetFileName(newFileName), error = "File is not a valid Frosty Mod." });
                                 continue;
                             }
 
+                            FileLogger.Info("Validating fbmod.");
+
                             // make sure mod is designed for current profile
                             bool newFormat = false;
-                            using (FileStream stream = new FileStream(fi.FullName, FileMode.Open, FileAccess.Read))
+                            using (FileStream stream = new FileStream(newFileName, FileMode.Open, FileAccess.Read))
                             {
                                 int retCode = VerifyMod(stream);
                                 if ((retCode & 1) != 0)
                                 {
                                     // continue with import (warning)
-                                    errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod was designed for a different game version, it may or may not work.", isWarning = true });
+                                    errors.Add(new ImportErrorInfo { filename = Path.GetFileName(newFileName), error = "Mod was designed for a different game version, it may or may not work.", isWarning = true });
                                 }
                                 else if (retCode == -1)
                                 {
-                                    errors.Add(new ImportErrorInfo { filename = fi.Name, error = "File is not a valid Frosty Mod." });
+                                    errors.Add(new ImportErrorInfo { filename = Path.GetFileName(newFileName), error = "File is not a valid Frosty Mod." });
                                 }
                                 else if (retCode == -2)
                                 {
-                                    errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod was not designed for this game." });
+                                    errors.Add(new ImportErrorInfo { filename = Path.GetFileName(newFileName), error = "Mod was not designed for this game." });
                                     continue;
                                 }
                                 else if (retCode == -3)
                                 {
-                                    errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod was found to be invalid and cannot be used" });
+                                    errors.Add(new ImportErrorInfo { filename = Path.GetFileName(newFileName), error = "Mod was found to be invalid and cannot be used" });
                                     continue;
                                 }
 
@@ -1535,49 +1600,63 @@ namespace FrostyModManager
                                     newFormat = true;
                             }
 
+                            FileLogger.Info("Validating fbmod finished.");
+
                             if (!newFormat)
                             {
+                                FileLogger.Info("Mod does not use new format.");
+
                                 // make sure mod has archive file
-                                if (!File.Exists(fi.FullName.Replace(".fbmod", "_01.archive")))
+                                if (!File.Exists(newFileName.Replace(".fbmod", "_01.archive")))
                                 {
-                                    errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod is missing the archive component." });
+                                    errors.Add(new ImportErrorInfo { filename = Path.GetFileName(newFileName), error = "Mod is missing the archive component." });
                                     continue;
                                 }
                             }
 
+                            FileLogger.Info("Looking for existing same mod.");
+
                             // check for existing mod of same name
                             {
-                                FrostyMod existingMod = availableMods.Find((IFrostyMod a) => a.Filename.ToLower().CompareTo(fi.Name.ToLower()) == 0) as FrostyMod;
+                                FrostyMod existingMod = availableMods.Find((IFrostyMod a) => a.Filename.ToLower().CompareTo(Path.GetFileName(newFileName).ToLower()) == 0) as FrostyMod;
                                 if (existingMod != null)
                                 {
                                     availableMods.Remove(existingMod);
-                                    foreach (FileInfo archiveFi in modsDir.GetFiles(fi.Name.Replace(".fbmod", "") + "_*.archive"))
+                                    foreach (FileInfo archiveFi in modsDir.GetFiles(Path.GetFileName(newFileName).Replace(".fbmod", "") + "_*.archive"))
                                     {
                                         File.Delete(archiveFi.FullName);
                                     }
-                                    File.Delete(modsDir.FullName + "/" + fi.Name);
+                                    
+                                    File.Delete(Path.Combine(modsDir.FullName, Path.GetFileName(newFileName)));
                                 }
                             }
 
+                            FileLogger.Info("Copying fbmod.");
+
                             // copy mod over
-                            File.Copy(fi.FullName, Path.Combine(modsDir.FullName, fi.Name));
-                            foreach (FileInfo archiveFi in fi.Directory.GetFiles(fi.Name.Replace(".fbmod", "") + "_*.archive"))
+                            File.Copy(newFileName, Path.Combine(modsDir.FullName, Path.GetFileName(newFileName)));
+                            var modFiles = Directory.GetFiles(fileDirectory, Path.GetFileName(newFileName).Replace(".fbmod", "") + "_*.archive");
+                            foreach (var archiveFi in modFiles)
                             {
-                                File.Copy(archiveFi.FullName, Path.Combine(modsDir.FullName, archiveFi.Name));
+                                File.Copy(archiveFi, Path.Combine(modsDir.FullName, Path.GetFileName(archiveFi)));
                             }
 
+                            FileLogger.Info("Adding fbmod to manager.");
+
                             // add mod to manager
-                            fi = new FileInfo(Path.Combine(modsDir.FullName, fi.Name));
-                            lastInstalledMod = AddMod(fi.FullName, newFormat ? 1 : 0);
+                            newFileName = Path.Combine(modsDir.FullName, Path.GetFileName(newFileName));
+                            lastInstalledMod = AddMod(newFileName, newFormat ? 1 : 0);
+
+                            FileLogger.Info("Processing fbmod finished.");
                         }
 
                         if (collections.Count > 0)
                         {
-                            if (filename.Contains(".zip"))
+                            if (newFileName.Contains(".zip"))
                             {
                                 // now actually decompress files
                                 ZipDecompressor decompressor = new ZipDecompressor();
-                                decompressor.OpenArchive(filename);
+                                decompressor.OpenArchive(newFileName);
                                 foreach (CompressedFileInfo compressedFi in decompressor.EnumerateFiles())
                                 {
                                     if (collections.Contains(compressedFi.Filename))
@@ -1586,18 +1665,28 @@ namespace FrostyModManager
                                     }
                                 }
                             }
-                            else if (filename.Contains(".fbcollection"))
+                            else if (newFileName.Contains(".fbcollection"))
                             {
-                                File.Copy(fi.FullName, Path.Combine(modsDir.FullName, fi.Name));
+                                File.Copy(newFileName, Path.Combine(modsDir.FullName, Path.GetFileName(newFileName)));
                             }
                         }
                     }
                     catch (FrostyModLoadException e)
                     {
-                        errors.Add(new ImportErrorInfo { error = e.Message, filename = fi.Name });
-                        File.Delete(fi.FullName);
+                        errors.Add(new ImportErrorInfo { error = e.Message, filename = Path.GetFileName(newFileName) });
+                        
+                        if (newFileName != filename)
+                        {
+                            File.Delete(newFileName);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        FileLogger.Info($"Exception when installing mods: {ex.Message}");
                     }
                 }
+
+                FileLogger.Info("Finished mod installation, adding mods to collection.");
 
                 // add collections to the mod manager
                 for (int i = 0; i < collections.Count; i++)
@@ -1605,7 +1694,11 @@ namespace FrostyModManager
                     FileInfo fi = new FileInfo(Path.Combine(modsDir.FullName, collections[i]));
                     lastInstalledMod = AddCollection(fi.FullName, 0);
                 }
+
+                FileLogger.Info("Finished adding mods to collection.");
             });
+
+            FileLogger.Info("Refreshing collection.");
 
             ICollectionView view = CollectionViewSource.GetDefaultView(availableModsList.ItemsSource);
 
@@ -1614,6 +1707,8 @@ namespace FrostyModManager
 
             PropertyGroupDescription groupDescription = new PropertyGroupDescription("ModDetails.Category");
             view.GroupDescriptions.Add(groupDescription);
+
+            FileLogger.Info("Validating collection.");
 
             if (lastInstalledMod != null)
             {
@@ -1652,9 +1747,55 @@ namespace FrostyModManager
                     FrostyMessageBox.Show("Pack has been successfully imported", "Frosty Mod Manager");
                 }
             }
+
+            FileLogger.Info("External mod installation finished.");
+        }
+
+        private static bool IsSubPath(string main, string secondary)
+        {
+            main = Path.GetFullPath(main.Trim()).ToLower().Replace('/', '\\');
+            secondary = Path.GetFullPath(secondary.Trim()).ToLower().Replace('/', '\\');
+
+            if (main.StartsWith(secondary))
+            {
+                return true;
+            }
+
+            return secondary.StartsWith(main);
         }
 
         private bool IsCompressed(FileInfo fi) => fi.Extension == ".rar" || fi.Extension == ".zip" || fi.Extension == ".7z" || fi.Extension == ".fbpack";
+
+        private bool IsCompressed(string path)
+        {
+            var extension = Path.GetExtension(path).ToLower();
+
+            if (extension == ".rar")
+            {
+                FileLogger.Info("File is rar.");
+                return true;
+            }
+
+            if (extension == ".zip")
+            {
+                FileLogger.Info("File is zip.");
+                return true;
+            }
+
+            if (extension == ".7z")
+            {
+                FileLogger.Info("File is zip.");
+                return true;
+            }
+
+            if (extension == ".fbpack")
+            {
+                FileLogger.Info("File is fbpack.");
+                return true;
+            }
+
+            return false;
+        }
 
         private void launchOptionsMenuItem_Click(object sender, RoutedEventArgs e)
         {

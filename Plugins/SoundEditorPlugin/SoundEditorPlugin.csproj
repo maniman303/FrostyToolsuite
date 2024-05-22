@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configurations>Developer - Debug;Release - Alpha;Release - Beta;Release - Final</Configurations>
     <Platforms>x64</Platforms>
-    <TargetFrameworks>net48</TargetFrameworks>
+    <TargetFrameworks>net481</TargetFrameworks>
     <AssemblyTitle>SoundEditorPlugin</AssemblyTitle>
     <Product>SoundEditorPlugin</Product>
     <Copyright>Copyright ©  2020</Copyright>
@@ -41,7 +41,7 @@
   </Target>
   
   <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
+    <PackageReference Include="System.Drawing.Common" Version="4.7.3" />
   </ItemGroup>
   
   <ItemGroup>

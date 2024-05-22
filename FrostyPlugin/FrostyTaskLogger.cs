@@ -4,7 +4,7 @@ using System;
 
 namespace Frosty.Core
 {
-    internal class FrostyTaskLogger : ILogger
+    public class FrostyTaskLogger : ILogger
     {
         private FrostyTaskWindow task;
         private Progress<string> progress = new Progress<string>();
@@ -17,6 +17,29 @@ namespace Frosty.Core
                 {
                     text = text.Replace("progress:", "");
                     task.Update(null, double.Parse(text.Trim()));
+                }
+                if (text.Contains("~"))
+                {
+                    var splits = text.Split('~');
+
+                    if (splits.Length == 0)
+                    {
+                        return;
+                    }
+
+                    if (splits.Length == 1 && text.StartsWith("~"))
+                    {
+                        task.Update(null, double.Parse(splits[0].Trim()));
+                        return;
+                    }
+
+                    if (splits.Length == 1 && text.EndsWith("~"))
+                    {
+                        task.Update(splits[0]);
+                        return;
+                    }
+
+                    task.Update(splits[0], double.Parse(splits[1].Trim()));
                 }
                 else
                 {
@@ -37,6 +60,20 @@ namespace Frosty.Core
             {
                 progInt.Report(string.Format(text, vars));
             }
+        }
+
+        public void LogProgress(string text, double value)
+        {
+            var progInt = (IProgress<string>)progress;
+
+            progInt.Report($"{text}~{value}");
+        }
+
+        public void LogProgress(double value)
+        {
+            var progInt = (IProgress<string>)progress;
+
+            progInt.Report($"~{value}");
         }
 
         public void LogWarning(string text, params object[] vars)

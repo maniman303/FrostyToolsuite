@@ -644,10 +644,10 @@ namespace DuplicationPlugin
                 newName = newName.Trim('/');
 
                 Type newType = win.SelectedType;
-                FrostyTaskWindow.Show("Duplicating asset", "", (task) =>
+                FrostyTaskWindow.Show("Duplicating asset", "", (logger) =>
                 {
                     if (!MeshVariationDb.IsLoaded)
-                        MeshVariationDb.LoadVariations(task);
+                        MeshVariationDb.LoadVariations(logger);
 
                     try
                     {
@@ -661,7 +661,7 @@ namespace DuplicationPlugin
                             }
                         }
 
-                        task.Update("Duplicating asset...");
+                        logger.Log("Duplicating asset...");
                         extensions[key].DuplicateAsset(entry, newName, newType != null, newType);
                     }
                     catch (Exception e)

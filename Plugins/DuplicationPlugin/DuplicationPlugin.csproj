@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configurations>Developer - Debug;Release - Alpha;Release - Beta;Release - Final</Configurations>
     <Platforms>x64</Platforms>
-    <TargetFrameworks>net48</TargetFrameworks>
+    <TargetFrameworks>net481</TargetFrameworks>
     <AssemblyTitle>BlankPlugin</AssemblyTitle>
     <Product>BlankPlugin</Product>
     <Copyright>Copyright ©  2020</Copyright>

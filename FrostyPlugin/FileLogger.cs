@@ -11,6 +11,11 @@ namespace Frosty.Core
 
         public static void Init()
         {
+            if (IsLogInit)
+            {
+                return;
+            }
+
             lock(locks)
             {
                 File.WriteAllText(logName, "Logger started.\n");

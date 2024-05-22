@@ -480,7 +480,7 @@ namespace LocalizedStringPlugin
             FrostySaveFileDialog sfd = new FrostySaveFileDialog("Save Localized Strings", "*.csv (CSV File)|*.csv", "LocalizedStrings");
             if (sfd.ShowDialog())
             {
-                FrostyTaskWindow.Show("Exporting Localized Strings", "", (task) =>
+                FrostyTaskWindow.Show("Exporting Localized Strings", "", (logger) =>
                 {
                     using (StreamWriter writer = new StreamWriter(sfd.FileName))
                     {
@@ -494,7 +494,7 @@ namespace LocalizedStringPlugin
                             str = str.Replace("\"", "\"\"");
 
                             writer.WriteLine(stringId.ToString("X8") + ",\"" + str + "\"");
-                            task.Update(progress: ((index++) / (double)stringIds.Count) * 100.0);
+                            logger.Log($"progress:{((index++) / (double)stringIds.Count) * 100.0}");
                         }
                     }
                 });
@@ -547,7 +547,7 @@ namespace LocalizedStringPlugin
             FrostySaveFileDialog sfd = new FrostySaveFileDialog("Save Localized Strings Usage List", "*.txt (Text File)|*.txt", "LocalizedStringsUsage");
             if (sfd.ShowDialog())
             {
-                FrostyTaskWindow.Show("Exporting Localized Strings Usage", "", (task) =>
+                FrostyTaskWindow.Show("Exporting Localized Strings Usage", "", (logger) =>
                 {
                     uint totalCount = (uint)App.AssetManager.EnumerateEbx().ToList().Count;
                     uint idx = 0;
@@ -558,7 +558,7 @@ namespace LocalizedStringPlugin
                     }
                     foreach (EbxAssetEntry refEntry in App.AssetManager.EnumerateEbx())
                     {
-                        task.Update("Checking: " + refEntry.Name, (idx++ / (double)totalCount) * 100.0d);
+                        logger.LogProgress("Checking: " + refEntry.Name, (idx++ / (double)totalCount) * 100.0d);
                         EbxAsset refAsset = App.AssetManager.GetEbx(refEntry);
                         List<string> AlreadyDone = new List<string>();
                         foreach (dynamic obj in refAsset.Objects)

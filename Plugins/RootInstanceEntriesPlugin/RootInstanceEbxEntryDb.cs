@@ -20,21 +20,21 @@ namespace RootInstanceEntiresPlugin
         private const uint cacheVersion = 1;
         private static Dictionary<Guid, Guid> ebxRootInstanceGuidList = new Dictionary<Guid, Guid>();
 
-        public static void LoadEbxRootInstanceEntries(FrostyTaskWindow task)
+        public static void LoadEbxRootInstanceEntries(FrostyTaskLogger logger)
         {
             ebxRootInstanceGuidList.Clear();
 
-            if (!ReadCache(task))
+            if (!ReadCache(logger))
             {
                 uint totalCount = App.AssetManager.GetEbxCount();
                 uint index = 0;
 
-                task.Update("Collecting ebx root instance guids");
+                logger.Log("Collecting ebx root instance guids");
 
                 foreach (EbxAssetEntry entry in App.AssetManager.EnumerateEbx())
                 {
                     uint progress = (uint)((index / (float)totalCount) * 100);
-                    task.Update(progress: progress);
+                    logger.LogProgress(progress);
 
                     EbxAsset asset = App.AssetManager.GetEbx(entry);
                     ebxRootInstanceGuidList.Add(asset.RootInstanceGuid, entry.Guid);
@@ -42,7 +42,7 @@ namespace RootInstanceEntiresPlugin
                     index++;
                 }
 
-                WriteToCache(task);
+                WriteToCache(logger);
             }
             IsLoaded = true;
         }
@@ -52,12 +52,12 @@ namespace RootInstanceEntiresPlugin
             return ebxRootInstanceGuidList.ContainsKey(guid) ? App.AssetManager.GetEbxEntry(ebxRootInstanceGuidList[guid]) : null;
         }
 
-        public static bool ReadCache(FrostyTaskWindow task)
+        public static bool ReadCache(FrostyTaskLogger logger)
         {
             if (!File.Exists($"{App.FileSystem.CacheName}_rootinstances.cache"))
                 return false;
 
-            task.Update($"Loading Data ({App.FileSystem.CacheName}_rootinstances.cache)");
+            logger.Log($"Loading Data ({App.FileSystem.CacheName}_rootinstances.cache)");
 
             using (NativeReader reader = new NativeReader(new FileStream($"{App.FileSystem.CacheName}_rootinstances.cache", FileMode.Open, FileAccess.Read)))
             {
@@ -82,13 +82,13 @@ namespace RootInstanceEntiresPlugin
             return true;
         }
 
-        public static void WriteToCache(FrostyTaskWindow task)
+        public static void WriteToCache(FrostyTaskLogger logger)
         {
             FileInfo fi = new FileInfo($"{App.FileSystem.CacheName}_rootinstances.cache");
             if (!Directory.Exists(fi.DirectoryName))
                 Directory.CreateDirectory(fi.DirectoryName);
 
-            task.Update("Caching data");
+            logger.Log("Caching data");
 
             using (NativeWriter writer = new NativeWriter(new FileStream(fi.FullName, FileMode.Create)))
             {

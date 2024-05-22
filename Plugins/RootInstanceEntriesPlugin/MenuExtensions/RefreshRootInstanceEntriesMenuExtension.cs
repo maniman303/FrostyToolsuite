@@ -17,9 +17,9 @@ namespace RootInstanceEntiresPlugin.MenuExtensions
 
         public override RelayCommand MenuItemClicked => new RelayCommand((o) =>
         {
-            FrostyTaskWindow.Show("Refreshing Root Instance Ebx Entries", "", (task) =>
+            FrostyTaskWindow.Show("Refreshing Root Instance Ebx Entries", "", (logger) =>
             {
-                RootInstanceEbxEntryDb.LoadEbxRootInstanceEntries(task);
+                RootInstanceEbxEntryDb.LoadEbxRootInstanceEntries(logger);
             });
         });
     }

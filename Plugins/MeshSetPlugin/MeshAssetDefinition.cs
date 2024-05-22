@@ -145,9 +145,9 @@ namespace MeshSetPlugin
             if (meshSet.Type == MeshType.MeshType_Skinned)
                 skeleton = ((SkinnedMeshExportSettings)settings).SkeletonAsset;
 
-            FrostyTaskWindow.Show("Exporting MeshSet", "", (task) =>
+            FrostyTaskWindow.Show("Exporting MeshSet", "", (logger) =>
             {
-                FBXExporter exporter = new FBXExporter(task);
+                FBXExporter exporter = new FBXExporter(logger);
                 exporter.ExportFBX(meshAsset, path, settings.Version.ToString().Replace("FBX_", ""), settings.Scale.ToString(), settings.FlattenHierarchy, settings.ExportSingleLod, skeleton, (filterType == "fbx") ? "binary" : "obj", meshSet);
             });
         }

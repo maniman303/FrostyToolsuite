@@ -125,7 +125,7 @@ namespace SoundEditorPlugin
         //    };
         //}
 
-        protected override List<SoundDataTrack> InitialLoad(FrostyTaskWindow task)
+        protected override List<SoundDataTrack> InitialLoad(FrostyTaskLogger logger)
         {
             List<SoundDataTrack> retVal = new List<SoundDataTrack>();
             dynamic soundWave = RootObject;
@@ -135,7 +135,7 @@ namespace SoundEditorPlugin
 
             foreach (dynamic runtimeVariation in soundWave.RuntimeVariations)
             {
-                task.Update(status: "Loading Track #" + (index + 1), progress: ((index + 1) / (double)totalCount) * 100.0d);
+                logger.LogProgress("Loading Track #" + (index + 1), ((index + 1) / (double)totalCount) * 100.0d);
 
                 SoundDataTrack track = new SoundDataTrack {Name = "Track #" + ((index++) + 1)};
 
@@ -335,7 +335,7 @@ namespace SoundEditorPlugin
         {
         }
 
-        protected override List<SoundDataTrack> InitialLoad(FrostyTaskWindow task)
+        protected override List<SoundDataTrack> InitialLoad(FrostyTaskLogger logger)
         {
             List<SoundDataTrack> retVal = new List<SoundDataTrack>();
             dynamic newWave = RootObject;
@@ -483,7 +483,7 @@ namespace SoundEditorPlugin
         {
         }
 
-        protected override List<SoundDataTrack> InitialLoad(FrostyTaskWindow task)
+        protected override List<SoundDataTrack> InitialLoad(FrostyTaskLogger logger)
         {
             List<SoundDataTrack> retVal = new List<SoundDataTrack>();
 

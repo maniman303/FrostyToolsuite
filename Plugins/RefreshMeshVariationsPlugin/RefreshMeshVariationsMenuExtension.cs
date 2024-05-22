@@ -17,9 +17,9 @@ namespace RefreshMeshVariationsPlugin
 
         public override RelayCommand MenuItemClicked => new RelayCommand((o) =>
         {
-            FrostyTaskWindow.Show("Refreshing Variations", "", (task) =>
+            FrostyTaskWindow.Show("Refreshing Variations", "", (logger) =>
             {
-                MeshVariationDb.LoadVariations(task);
+                MeshVariationDb.LoadVariations(logger);
             });
         });
     }

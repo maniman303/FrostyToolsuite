@@ -131,9 +131,9 @@ namespace ObjectVariationPlugin
             {
                 if (!MeshVariationDb.IsLoaded)
                 {
-                    FrostyTaskWindow.Show("Loading Variations", "", (task) =>
+                    FrostyTaskWindow.Show("Loading Variations", "", (logger) =>
                     {
-                        MeshVariationDb.LoadVariations(task);
+                        MeshVariationDb.LoadVariations(logger);
                     });
                 }
 

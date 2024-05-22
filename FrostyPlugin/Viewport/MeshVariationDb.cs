@@ -123,7 +123,7 @@ namespace Frosty.Core.Viewport
 
         private static Dictionary<Guid, MeshVariationDbEntry> modifiedentries = new Dictionary<Guid, MeshVariationDbEntry>();
 
-        public static void LoadVariations(FrostyTaskWindow task = null)
+        public static void LoadVariations(FrostyTaskLogger logger = null)
         {
             int mvdbVersion = 1;
 
@@ -139,7 +139,7 @@ namespace Frosty.Core.Viewport
             uint index = 0;
 
             entries.Clear();
-            task?.Update("Loading Variation Databases");
+            logger?.Log("Loading Variation Databases");
 
             string cache = System.AppDomain.CurrentDomain.BaseDirectory + @"\Caches\" + Enum.GetName(typeof(ProfileVersion), ProfilesLibrary.DataVersion) + "_mvdb.cache";
             bool generateMVDB = true;
@@ -206,7 +206,7 @@ namespace Frosty.Core.Viewport
                 foreach (EbxAssetEntry ebx in App.AssetManager.EnumerateEbx("MeshVariationDatabase"))
                 {
                     uint progress = (uint)((index / (float)totalCount) * 100);
-                    task?.Update(progress: progress);
+                    logger?.Log($"progress:{progress}");
                     if (ebx.IsAdded)
                         continue;
                     EbxAsset asset = App.AssetManager.GetEbx(ebx, true);

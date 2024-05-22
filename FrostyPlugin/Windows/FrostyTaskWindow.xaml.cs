@@ -12,7 +12,7 @@ using System.Windows.Shell;
 
 namespace Frosty.Core.Windows
 {
-    public delegate void FrostyTaskCallback(ILogger logger);
+    public delegate void FrostyTaskCallback(FrostyTaskLogger logger);
     public delegate void FrostyTaskCancelCallback(FrostyTaskWindow owner);
 
     /// <summary>
@@ -68,7 +68,7 @@ namespace Frosty.Core.Windows
             }
         }
 
-        public ILogger TaskLogger { get; private set; }
+        public FrostyTaskLogger TaskLogger { get; private set; }
 
         private FrostyTaskWindow(Window owner, string task, string initialStatus, FrostyTaskCallback callback, bool showCancelButton, FrostyTaskCancelCallback cancelCallback = null)
         {
@@ -137,7 +137,15 @@ namespace Frosty.Core.Windows
 
             bw.DoWork += (s, evt) =>
             {
-                _callback(TaskLogger);
+                try
+                {
+                    _callback(TaskLogger);
+                }
+                catch (Exception ex)
+                {
+                    FileLogger.Init();
+                    FileLogger.Info($"Exception in Task Window: {ex.Message}");
+                }
             };
 
             bw.RunWorkerCompleted += (s, evt) =>
@@ -151,18 +159,6 @@ namespace Frosty.Core.Windows
             };
 
             bw.RunWorkerAsync();
-
-            //await Task.Run(() =>
-            //{
-            //    _callback(this);
-            //});
-
-            //if (!OperatingSystemHelper.IsWine())
-            //{
-            //    Application.Current.MainWindow.TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.None;
-            //}
-
-            //Close();
         }
 
         public void Update(string status = null, double? progress = null)

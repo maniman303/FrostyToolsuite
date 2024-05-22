@@ -299,11 +299,11 @@ namespace MeshSetPlugin
         private FbxGeometryConverter geomConverter;
         private bool flattenHierarchy = true;
         private bool exportSingleLod = false;
-        private FrostyTaskWindow task;
+        private FrostyTaskLogger logger;
 
-        public FBXExporter(FrostyTaskWindow inTask)
+        public FBXExporter(FrostyTaskLogger logger)
         {
-            task = inTask;
+            this.logger = logger;
         }
 
         /// <summary>
@@ -361,14 +361,14 @@ namespace MeshSetPlugin
                 if (meshSets[0].Lods[0].Type == MeshType.MeshType_Skinned && skeleton != "")
                 {
                     // skinned mesh requires external skeleton
-                    task.Update("Writing skeleton");
+                    logger.Log("Writing skeleton");
                     FbxNode rootNode = FBXCreateSkeleton(scene, meshAsset, skeleton, ref boneNodes);
                     scene.RootNode.AddChild(rootNode);
                 }
                 else if (meshSets[0].Lods[0].Type == MeshType.MeshType_Composite)
                 {
                     // composite skeleton has parts defined in mesh
-                    task.Update("Writing composite skeleton");
+                    logger.Log("Writing composite skeleton");
                     FbxNode rootNode = FBXCreateCompositeSkeleton(scene, meshSets[0].Lods[0].PartTransforms, ref boneNodes);
                     scene.RootNode.AddChild(rootNode);
                 }
@@ -379,7 +379,7 @@ namespace MeshSetPlugin
                 {
                     foreach (MeshSetLod lod in meshSet.Lods)
                     {
-                        task.Update("Writing " + lod.ShortName);
+                        logger.Log("Writing " + lod.ShortName);
                         FBXCreateMesh(scene, lod, boneNodes, lodIdx);
                         if (exportSingleLod)
                         {
@@ -697,7 +697,7 @@ namespace MeshSetPlugin
                 if (section.Name == "")
                     continue;
 
-                task.Update(progress: (currentProgress++ / (double)totalExportCount) * 100.0);
+                logger.LogProgress((currentProgress++ / (double)totalExportCount) * 100.0);
 
                 Stream chunkStream = (lod.ChunkId != Guid.Empty)
                     ? App.AssetManager.GetChunk(App.AssetManager.GetChunkEntry(lod.ChunkId))

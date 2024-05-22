@@ -485,9 +485,9 @@ namespace SoundEditorPlugin
                 audioPlayer = new AudioPlayer();
 
                 List<SoundDataTrack> tracks = null;
-                FrostyTaskWindow.Show("Loading Tracks", "", owner =>
+                FrostyTaskWindow.Show("Loading Tracks", "", logger =>
                 {
-                    tracks = InitialLoad(owner);
+                    tracks = InitialLoad(logger);
                 });
 
                 foreach (var track in tracks)
@@ -497,7 +497,7 @@ namespace SoundEditorPlugin
             }
         }
 
-        protected virtual List<SoundDataTrack> InitialLoad(FrostyTaskWindow task)
+        protected virtual List<SoundDataTrack> InitialLoad(FrostyTaskLogger logger)
         {
             return new List<SoundDataTrack>();
         }
@@ -551,9 +551,9 @@ namespace SoundEditorPlugin
             {
                 try
                 {
-                    FrostyTaskWindow.Show("Importing track", "", (task) =>
+                    FrostyTaskWindow.Show("Importing track", "", (logger) =>
                     {
-                        ImportSound(ofd, task);
+                        ImportSound(ofd, logger);
                     });
                 }
                 catch (Exception exp)
@@ -564,7 +564,7 @@ namespace SoundEditorPlugin
             }
         }
 
-        private void ImportSound(FrostyOpenFileDialog ofd, FrostyTaskWindow task)
+        private void ImportSound(FrostyOpenFileDialog ofd, FrostyTaskLogger logger)
         {
             //WaveFormat waveFormat = null;
             MemoryStream ms = new MemoryStream();
@@ -698,7 +698,7 @@ namespace SoundEditorPlugin
             audioPlayer.Dispose();
             audioPlayer = new AudioPlayer();
 
-            List<SoundDataTrack> tracks = InitialLoad(task);
+            List<SoundDataTrack> tracks = InitialLoad(logger);
 
             Dispatcher?.Invoke(() =>
             {

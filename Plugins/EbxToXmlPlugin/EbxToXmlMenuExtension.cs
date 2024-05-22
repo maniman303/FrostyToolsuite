@@ -26,14 +26,14 @@ namespace EbxToXmlPlugin
             if (fbd.ShowDialog() == DialogResult.OK)
             {
                 string outDir = fbd.SelectedPath;
-                FrostyTaskWindow.Show("Exporting EBX", "", (task) =>
+                FrostyTaskWindow.Show("Exporting EBX", "", (logger) =>
                 {
                     uint totalCount = App.AssetManager.GetEbxCount();
                     uint idx = 0;
 
                     foreach (EbxAssetEntry entry in App.AssetManager.EnumerateEbx())
                     {
-                        task.Update(entry.Name, (idx++ / (double)totalCount) * 100.0d);
+                        logger.LogProgress(entry.Name, (idx++ / (double)totalCount) * 100.0d);
 
                         string fullPath = outDir + "/" + entry.Path + "/";
 
