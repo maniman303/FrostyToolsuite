@@ -27,6 +27,7 @@ namespace Frosty.Core
         private const string lsPath = "/bin/ls";
         private const string lnPath = "/bin/ln";
         private const string rmPath = "/bin/rm";
+        private const string findPath = "/bin/find";
 
         private static bool _areHardLinksSupported = false;
 
@@ -121,102 +122,7 @@ namespace Frosty.Core
 
             path = Path.GetFullPath(path);
 
-            if (!_areSymLinksLinuxSupported)
-            {
-                Directory.Delete(path, true);
-                return;
-            }
-
-            if (IsSymbolicLink(path))
-            {
-                DeleteDirectorySymLink(path);
-                return;
-            }
-
-            FileLogger.Info($"Removing directory '{path}'.");
-
-            var realDirs = new List<string> { path };
-            while (realDirs.Count > 0)
-            {
-                var files = new List<string>();
-                var dirs = new List<string>();
-
-                foreach (var realDir in realDirs)
-                {
-                    files.AddRange(Directory.GetFiles(realDir));
-                    dirs.AddRange(Directory.GetDirectories(realDir));
-                }
-
-                FileLogger.Info($"Removing {files.Count} files.");
-
-                var fileBatches = BatchesHelper.Split(files, BatchSize);
-                foreach (var fileBatch in fileBatches)
-                {
-                    var fileTasks = fileBatch.Select(f => Task.Run(() => DeleteFileSafe(f))).ToArray();
-
-                    try
-                    {
-                        Task.WaitAll(fileTasks);
-                    }
-                    catch (AggregateException ae)
-                    {
-                        HandleAggregateException(ae);
-                    }
-                }
-
-                var dirSymLinks = new List<string>();
-                var dirBatches = BatchesHelper.Split(dirs, BatchSize);
-                foreach (var dirBatch in dirBatches)
-                {
-                    var dirTasks = dirBatch.Select(d => Task.Run(() => {
-                        return IsSymbolicLink(d) ? d : string.Empty;
-                    })).ToArray();
-                    
-                    try
-                    {
-                        Task.WaitAll(dirTasks);
-                    }
-                    catch (AggregateException ax)
-                    {
-                        HandleAggregateException(ax);
-                    }
-
-                    dirSymLinks.AddRange(dirTasks.Select(d => d.Result).Where(d => !string.IsNullOrWhiteSpace(d)));
-                }
-
-                FileLogger.Info($"Removing {dirSymLinks.Count} directory symbolic links.");
-
-                dirBatches = BatchesHelper.Split(dirSymLinks, BatchSize);
-                foreach (var dirBatch in dirBatches)
-                {
-                    var dirTasks = dirBatch.Select(d => Task.Run(() => DeleteDirectorySymLink(d))).ToArray();
-
-                    try
-                    {
-                        Task.WaitAll(dirTasks);
-                    }
-                    catch (AggregateException ax)
-                    {
-                        HandleAggregateException(ax);
-                    }
-                }
-
-                dirs.Clear();
-                foreach (var realDir in realDirs)
-                {
-                    dirs.AddRange(Directory.GetDirectories(realDir));
-                }
-
-                realDirs.Clear();
-                realDirs.AddRange(dirs);
-            }
-
-            Directory.Delete(path, true);
-        }
-
-        private static void DeleteDirectorySymLink(string path)
-        {
-            if (!OperatingSystemHelper.IsWine())
+            if (!OperatingSystemHelper.IsWine() || !_areSymLinksLinuxSupported)
             {
                 Directory.Delete(path, true);
                 return;
@@ -228,7 +134,7 @@ namespace Frosty.Core
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = $"Z:{rmPath}",
-                    Arguments = $"\"{linuxPath}\"",
+                    Arguments = $"-r \"{linuxPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
@@ -246,7 +152,7 @@ namespace Frosty.Core
                 Thread.Sleep(waitTime);
             }
 
-            FileLogger.Info($"Could not determine if directory sym link '{path}' was removed.");
+            FileLogger.Info($"Could not determine if directory '{path}' was removed.");
         }
 
         public static void DeleteFileSafe(string path)
@@ -257,12 +163,6 @@ namespace Frosty.Core
             }
 
             if (!OperatingSystemHelper.IsWine() || !_areSymLinksLinuxSupported)
-            {
-                File.Delete(path);
-                return;
-            }
-
-            if (!IsSymbolicLinkLinux(path))
             {
                 File.Delete(path);
                 return;
@@ -292,93 +192,57 @@ namespace Frosty.Core
                 Thread.Sleep(waitTime);
             }
 
-            FileLogger.Info($"Could not determine if file sym link '{path}' was removed.");
+            FileLogger.Info($"Could not determine if file '{path}' was removed.");
         }
 
         public static bool DoesDirectoryContainSymLinks(string path)
         {
-            if (!Directory.Exists(path))
+            if (!Directory.Exists(path) || !_areSymLinksLinuxSupported)
             {
                 return false;
             }
 
-            var realDirs = new List<string>
+            path = CleanPath(Path.GetFullPath(path));
+
+            var resSufix = GetUniqueExtension();
+            var resFilePath = $"{path}{resSufix}";
+
+            var linuxPath = GetLinuxPath(path);
+
+            var resFileLinuxPath = $"{linuxPath}{resSufix}";
+
+            File.Delete(resFilePath);
+
+            var proc = new Process
             {
-                path
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c {findPath} \"{linuxPath}\" -type l -print -quit > \"{resFileLinuxPath}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
             };
 
-            while (realDirs.Count > 0)
+            proc.Start();
+            proc.WaitForExit();
+
+            string status = null;
+
+            for (int i = 0; i < waitLoops * 5; i++)
             {
-                var files = new List<string>();
-                var dirs = new List<string>();
-
-                foreach (var realDir in realDirs)
+                status = File.ReadAllText(resFilePath);
+                if (!string.IsNullOrWhiteSpace(status))
                 {
-                    files.AddRange(Directory.GetFiles(realDir));
-                    dirs.AddRange(Directory.GetDirectories(realDir));
+                    break;
                 }
 
-                realDirs.Clear();
-
-                FileLogger.Info($"Scaning {files.Count} files.");
-
-                var fileBatches = BatchesHelper.Split(files, BatchSize);
-                foreach (var fileBatch in fileBatches)
-                {
-                    var fileTasks = fileBatch.Select(f => Task.Run(() =>
-                    {
-                        return IsSymbolicLink(f);
-                    })).ToArray();
-
-                    try
-                    {
-                        Task.WaitAll(fileTasks);
-                    }
-                    catch (AggregateException ax)
-                    {
-                        HandleAggregateException(ax);
-                    }
-
-                    foreach (var ft in fileTasks)
-                    {
-                        if (ft.Result)
-                        {
-                            return true;
-                        }
-                    }
-                }
-
-                FileLogger.Info($"Scaning {dirs.Count} directories.");
-
-                var dirBatches = BatchesHelper.Split(dirs, BatchSize);
-                foreach (var dirBatch in dirBatches)
-                {
-                    var dirTasks = dirBatch.Select(d => Task.Run(() => {
-                        return IsSymbolicLink(d) ? string.Empty : d;
-                    })).ToArray();
-
-                    try
-                    {
-                        Task.WaitAll(dirTasks);
-                    }
-                    catch (AggregateException ax)
-                    {
-                        HandleAggregateException(ax);
-                    }
-
-                    foreach (var dt in dirTasks)
-                    {
-                        if (string.IsNullOrWhiteSpace(dt.Result))
-                        {
-                            return true;
-                        }
-
-                        realDirs.Add(dt.Result);
-                    }
-                }
+                Thread.Sleep(waitTime);
             }
 
-            return false;
+            File.Delete(resFilePath);
+
+            return !string.IsNullOrWhiteSpace(status);
         }
 
         public static void CreateSymlinkLinux(string source, string destination)
@@ -481,7 +345,7 @@ namespace Frosty.Core
                 return false;
             }
 
-            var resSufix = $".{Task.CurrentId}.{DateTime.Now:ssfff}.{linuxSufix}";
+            var resSufix = GetUniqueExtension();
             var resFilePath = $"{path}{resSufix}";
 
             var linuxPath = GetLinuxPath(path);
@@ -562,6 +426,13 @@ namespace Frosty.Core
                 return path;
             }
 
+            path = path.Trim();
+
+            if (path == "./" || path == ".\\")
+            {
+                return path;
+            }
+
             while (path.EndsWith("/") || path.EndsWith("\\"))
             {
                 path = path.Substring(0, path.Length - 1);
@@ -621,6 +492,11 @@ namespace Frosty.Core
             var realParent = GetRealPath(parent);
 
             return Path.Combine(realParent, Path.GetFileName(realName));
+        }
+
+        private static string GetUniqueExtension()
+        {
+            return $".{Task.CurrentId}.{DateTime.Now:ssfff}.{linuxSufix}";
         }
 
         private static void TestHardLinks(string modPath)

@@ -103,6 +103,7 @@ namespace FrostyModManager
             {
                 try
                 {
+                    SymLinkHelper.Initialize(selectedPack.Path);
                     SymLinkHelper.DeleteDirectorySafe(selectedPack.Path);
                     listPacks();
                 }
@@ -176,6 +177,12 @@ namespace FrostyModManager
         /// </summary>
         private void createShortcutToModData_Click(object sender, RoutedEventArgs e)
         {
+            if (OperatingSystemHelper.IsWine())
+            {
+                FileLogger.Info("Shortcuts are not supported on Linux.");
+                return;
+            }
+
             Pack selectedPack = ((Button)sender).DataContext as Pack;
             string basePath = Config.Get<string>("GamePath", "", ConfigScope.Game, ProfilesLibrary.ProfileName) + '\\';
             string modDirName = "ModData\\" + selectedPack.Name;

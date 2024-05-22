@@ -365,6 +365,8 @@ namespace FrostyModManager
                 if (!modsDir.Exists)
                     Directory.CreateDirectory(modsDir.FullName);
 
+                
+
                 int currentMod = 0;
                 int totalMods = modsDir.EnumerateFiles().Count();
 
@@ -802,7 +804,7 @@ namespace FrostyModManager
                     }
                     catch (Exception ex)
                     {
-                        FileLogger.Info($"Exception on clipboard set. Details: {ex.Message}");
+                        FileLogger.Info($"Exception on clipboard set. Details: {ex}");
                         clipboardSuccess = false;
                     }
                 }
