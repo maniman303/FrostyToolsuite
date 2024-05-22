@@ -494,7 +494,7 @@ namespace LocalizedStringPlugin
                             str = str.Replace("\"", "\"\"");
 
                             writer.WriteLine(stringId.ToString("X8") + ",\"" + str + "\"");
-                            logger.Log($"progress:{((index++) / (double)stringIds.Count) * 100.0}");
+                            logger.LogProgress(((index++) / (double)stringIds.Count) * 100.0);
                         }
                     }
                 });

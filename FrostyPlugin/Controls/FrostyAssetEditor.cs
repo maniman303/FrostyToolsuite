@@ -154,7 +154,7 @@ namespace Frosty.Core.Controls
                     {
                         EbxAssetEntry dependentEntry = App.AssetManager.GetEbxEntry(guid);
 
-                        logger.Log($"progress:{(index++ / (double)totalCount) * 100.0d}");
+                        logger.LogProgress((index++ / (double)totalCount) * 100.0d);
 
                         if (dependentEntry != null)
                             dependentObjects.Add(guid, App.AssetManager.GetEbx(dependentEntry));

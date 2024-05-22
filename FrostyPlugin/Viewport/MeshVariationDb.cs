@@ -206,7 +206,7 @@ namespace Frosty.Core.Viewport
                 foreach (EbxAssetEntry ebx in App.AssetManager.EnumerateEbx("MeshVariationDatabase"))
                 {
                     uint progress = (uint)((index / (float)totalCount) * 100);
-                    logger?.Log($"progress:{progress}");
+                    logger?.LogProgress(progress);
                     if (ebx.IsAdded)
                         continue;
                     EbxAsset asset = App.AssetManager.GetEbx(ebx, true);

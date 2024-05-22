@@ -398,7 +398,7 @@ namespace FrostyModManager
                             File.Delete(fi.FullName.Replace(".fbmod", "_01.archive"));
                         }
                     }
-                    logger.Log("progress:" + currentMod++ / (float)totalMods * 100d);
+                    logger.LogProgress(currentMod++ / (float)totalMods * 100d);
                 });
                 // load collections
                 Parallel.ForEach(modsDir.EnumerateFiles(), fi =>
@@ -407,7 +407,7 @@ namespace FrostyModManager
                     {
                         AddCollection(fi.FullName, 0);
                     }
-                    logger.Log("progress:" + currentMod++ / (float)totalMods * 100d);
+                    logger.LogProgress(currentMod++ / (float)totalMods * 100d);
                 });
             });
             availableMods = availableMods.OrderBy(o => o.Filename).ToList();
