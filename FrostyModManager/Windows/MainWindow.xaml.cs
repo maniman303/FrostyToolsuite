@@ -731,7 +731,7 @@ namespace FrostyModManager
 
             try
             {
-                Clipboard.SetText(string.Empty);
+                Clipboard.SetDataObject(string.Empty);
             }
             catch
             {
@@ -796,7 +796,7 @@ namespace FrostyModManager
 
                     try
                     {
-                        Clipboard.SetText(clipBoardArgs);
+                        Clipboard.SetDataObject(clipBoardArgs);
                         
                         clipboardSuccess = true;
                         i = 99;
