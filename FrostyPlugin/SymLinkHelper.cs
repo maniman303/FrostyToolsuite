@@ -74,9 +74,9 @@ namespace Frosty.Core
                 }
             }
 
-            if (!File.Exists(lsPath) || !File.Exists(lnPath) || !File.Exists(rmPath))
+            if (!File.Exists(lsPath) || !File.Exists(lnPath) || !File.Exists(rmPath) || !File.Exists(findPath))
             {
-                FileLogger.Info($"Missing file '{lsPath}' or '{lnPath}' or '{rmPath}'.");
+                FileLogger.Info($"Missing file '{lsPath}' or '{lnPath}' or '{rmPath}' or '{findPath}'.");
                 _areSymLinksLinuxSupported = false;
                 return;
             }
