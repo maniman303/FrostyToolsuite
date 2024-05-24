@@ -69,6 +69,7 @@
       <HintPath>..\FrostyEditor\ThirdParty\SharpDX.DXGI.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Activities" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />

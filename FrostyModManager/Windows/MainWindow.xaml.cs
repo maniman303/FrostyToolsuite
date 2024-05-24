@@ -291,6 +291,9 @@ namespace FrostyModManager
 
         private IProgress<string> DropProgressReporter => DropProgress;
 
+        private Progress<int> UpdateConflictsProgress;
+        private IProgress<int> UpdateConflictsProgressReporter => UpdateConflictsProgress;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -314,6 +317,13 @@ namespace FrostyModManager
             };
 
             AllowDrop = true;
+
+            UpdateConflictsProgress = new Progress<int>();
+
+            UpdateConflictsProgress.ProgressChanged += (s, arg) =>
+            {
+                UpdateConflicts();
+            };
 
             if (OperatingSystemHelper.IsWine())
             {
@@ -1860,22 +1870,37 @@ namespace FrostyModManager
         private void SelectedProfile_AppliedModsUpdated(object sender, RoutedEventArgs e)
         {
             if (tabControl.SelectedItem == conflictsTabItem)
-                UpdateConflicts();
+            {
+                UpdateConflictsProgressReporter.Report(0);
+            }
 
             conflictsTabItem.Visibility = Visibility.Visible;
         }
 
         private void UpdateConflicts()
         {
+            FileLogger.Info("Start conflicts update.");
+
+            FrostyMessageBox.Show("Frosty might freeze for a minute or two when loading resources of a big mod collection.\r\n", "Warning");
+
             bool onlyShowReplacements = (bool)showOnlyReplacementsCheckBox.IsChecked;
 
             StringBuilder sb = new StringBuilder();
             List<ModResourceInfo> totalResourceList = new List<ModResourceInfo>();
 
+            List<GridViewColumn> columns = new List<GridViewColumn>
+            {
+                new GridViewColumn
+                {
+                    Header = "Resource",
+                    CellTemplate = conflictsListView.Resources["conflictsNameTemplate"] as DataTemplate
+                }
+            };
+
             CancellationTokenSource cancelToken = new CancellationTokenSource();
 
             bool cancelled = false;
-            FrostyTaskWindow.Show("Updating Actions", "", (task) =>
+            FrostyTaskWindow.Show("Updating Actions", "", (logger) =>
             {
                 try
                 {
@@ -1969,26 +1994,32 @@ namespace FrostyModManager
                 }
 
                 if (onlyShowReplacements)
+                {
                     totalResourceList.RemoveAll(item => item.ModCount <= 1);
+                }
+
+                totalResourceList.Sort((ModResourceInfo a, ModResourceInfo b) =>
+                {
+                    int result = a.Type[1].CompareTo(b.Type[1]);
+                    return result == 0 ? a.Name.CompareTo(b.Name) : result;
+                });
             }, showCancelButton: true, cancelCallback: (task) => cancelToken.Cancel());
 
             if (cancelled)
             {
-                Dispatcher.BeginInvoke((Action)(() => tabControl.SelectedItem = appliedModsTabItem));
+                FileLogger.Info("Update was canceled.");
+                tabControl.SelectedItem = appliedModsTabItem;
                 return;
             }
 
-            List<GridViewColumn> columns = new List<GridViewColumn>
-            {
-                new GridViewColumn
-                {
-                    Header = "Resource",
-                    CellTemplate = conflictsListView.Resources["conflictsNameTemplate"] as DataTemplate
-                }
-            };
+            SetNativeEnabled(this, false);
+
+            var modal = FrostyTaskWindow.ShowSimple("Updating view", "Loading applied mods");
 
             for (int i = 0; i < selectedPack.AppliedMods.Count; i++)
             {
+                FileLogger.Info("Applying view changes for a mod.");
+
                 FrostyAppliedMod appliedMod = selectedPack.AppliedMods[i];
                 if (!appliedMod.IsFound || !appliedMod.IsEnabled)
                     continue;
@@ -2036,17 +2067,20 @@ namespace FrostyModManager
 
             gv.Columns.Clear();
             foreach (GridViewColumn gvc in columns)
-                gv.Columns.Add(gvc);
-
-            totalResourceList.Sort((ModResourceInfo a, ModResourceInfo b) =>
             {
-                int result = a.Type[1].CompareTo(b.Type[1]);
-                return result == 0 ? a.Name.CompareTo(b.Name) : result;
-            });
+                gv.Columns.Add(gvc);
+            }
 
-            Dispatcher.BeginInvoke((Action)(() => tabControl.SelectedItem = conflictsTabItem));
+            tabControl.SelectedItem = conflictsTabItem;
+
             conflictsListView.ItemsSource = totalResourceList;
             conflictsListView.SelectedIndex = 0;
+
+            SetNativeEnabled(this, true);
+
+            modal.Close();
+
+            FileLogger.Info("Finished conflicts update.");
         }
 
         private void AddResourceAction(List<ModResourceInfo> totalResourceList, string modName, string resourceName, string resourceType, ModPrimaryActionType type)
@@ -2066,7 +2100,7 @@ namespace FrostyModManager
         {
             if (conflictsTabItem.IsSelected)
             {
-                UpdateConflicts();
+                UpdateConflictsProgressReporter.Report(0);
             }
         }
 
@@ -2107,7 +2141,7 @@ namespace FrostyModManager
 
         private void PART_ShowOnlyReplacementsCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            UpdateConflicts();
+            UpdateConflictsProgressReporter.Report(0);
         }
 
         private void optionsMenuItem_Click(object sender, RoutedEventArgs e)

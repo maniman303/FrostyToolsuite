@@ -133,6 +133,11 @@ namespace Frosty.Core.Windows
 
         private void FrostyTaskWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            if (_callback == null)
+            {
+                return;
+            }
+
             var bw = new BackgroundWorker { WorkerReportsProgress = true };
 
             bw.DoWork += (s, evt) =>
@@ -204,6 +209,15 @@ namespace Frosty.Core.Windows
         public static void Show(string task, string initialStatus, FrostyTaskCallback callback, bool showCancelButton = false, FrostyTaskCancelCallback cancelCallback = null)
         {
             Show(Application.Current.MainWindow, task, initialStatus, callback, showCancelButton, cancelCallback);
+        }
+
+        public static FrostyTaskWindow ShowSimple(string task, string initialStatus)
+        {
+            FrostyTaskWindow win = new FrostyTaskWindow(Application.Current.MainWindow, task, initialStatus, null, false, null);
+
+            win.Show();
+
+            return win;
         }
 
         private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")

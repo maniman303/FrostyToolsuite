@@ -1,8 +1,6 @@
 ﻿using Frosty.Controls;
-using Frosty.Core.Windows;
 using System;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace Frosty.Core.Controls
 {

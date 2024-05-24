@@ -519,5 +519,23 @@ namespace Frosty.Controls
 
             return foundChild;
         }
+
+        protected const int GWL_STYLE = -16;
+        protected const int WS_DISABLED = 0x08000000;
+
+        [DllImport("user32.dll")]
+        protected static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll")]
+        protected static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        protected static void SetNativeEnabled(Window window, bool enabled)
+        {
+            var handle = new WindowInteropHelper(window).Handle;
+            SetWindowLong(handle, GWL_STYLE, GetWindowLong(handle, GWL_STYLE) &
+                ~WS_DISABLED | (enabled ? 0 : WS_DISABLED));
+        }
     }
+
+
 }
