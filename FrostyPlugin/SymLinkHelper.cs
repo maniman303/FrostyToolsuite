@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Linq;
 using Microsoft.Win32;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace Frosty.Core
 {
@@ -15,7 +13,6 @@ namespace Frosty.Core
     {
         public const int BatchSize = 8;
 
-        private const string linuxSufix = "linux";
         private const string linuxTemp = "linux_temp";
 
         private const string registryPath = "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Session Manager\\Environment";
@@ -24,10 +21,7 @@ namespace Frosty.Core
         private const int waitLoops = 33;
         private const int waitTime = 6;
 
-        private const string lsPath = "/bin/ls";
-        private const string lnPath = "/bin/ln";
-        private const string rmPath = "/bin/rm";
-        private const string findPath = "/bin/find";
+        private const string symlinkBin = "./ThirdParty/wine-symlink-helper.exe.so";
 
         private static bool _areHardLinksSupported = false;
 
@@ -53,30 +47,16 @@ namespace Frosty.Core
                 return;
             }
 
-            var envVar = Environment.GetEnvironmentVariable(envVarName);
-
-            if (string.IsNullOrWhiteSpace(envVar))
+            if (!UpdateEnviromentalVariables())
             {
                 FileLogger.Info($"Missing value for env var {envVarName}.");
                 _areSymLinksLinuxSupported = false;
                 return;
             }
 
-            if (envVar != "." && !envVar.Contains(".;") && !envVar.EndsWith(";."))
+            if (!File.Exists(symlinkBin))
             {
-                if (envVar.EndsWith(";"))
-                {
-                    Environment.SetEnvironmentVariable(envVarName, envVar + ".");
-                }
-                else
-                {
-                    Environment.SetEnvironmentVariable(envVarName, envVar + ";.");
-                }
-            }
-
-            if (!File.Exists(lsPath) || !File.Exists(lnPath) || !File.Exists(rmPath) || !File.Exists(findPath))
-            {
-                FileLogger.Info($"Missing file '{lsPath}' or '{lnPath}' or '{rmPath}' or '{findPath}'.");
+                FileLogger.Info($"Missing file '{symlinkBin}'");
                 _areSymLinksLinuxSupported = false;
                 return;
             }
@@ -101,7 +81,7 @@ namespace Frosty.Core
 
             try
             {
-                IsSymbolicLinkLinux(tempFile);
+                IsSymbolicLink(tempFile);
             }
             catch (Exception ex)
             {
@@ -133,7 +113,7 @@ namespace Frosty.Core
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = $"Z:{rmPath}",
+                    FileName = symlinkBin,
                     Arguments = $"-r \"{linuxPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true
@@ -141,6 +121,15 @@ namespace Frosty.Core
             };
 
             proc.Start();
+            
+            try
+            {
+                proc.WaitForExit();
+            }
+            catch
+            {
+                FileLogger.Info("Process finished early on directory delete.");
+            }
 
             for (int i = 0; i < waitLoops; i++)
             {
@@ -173,14 +162,23 @@ namespace Frosty.Core
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = $"Z:{rmPath}",
-                    Arguments = $"\"{linuxPath}\"",
+                    FileName = symlinkBin,
+                    Arguments = $"-r \"{linuxPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
             };
 
             proc.Start();
+
+            try
+            {
+                proc.WaitForExit();
+            }
+            catch
+            {
+                FileLogger.Info("Process finished early on file delete.");
+            }
 
             for (int i = 0; i < waitLoops; i++)
             {
@@ -203,46 +201,38 @@ namespace Frosty.Core
             }
 
             path = CleanPath(Path.GetFullPath(path));
-
-            var resSufix = GetUniqueExtension();
-            var resFilePath = $"{path}{resSufix}";
-
             var linuxPath = GetLinuxPath(path);
-
-            var resFileLinuxPath = $"{linuxPath}{resSufix}";
-
-            File.Delete(resFilePath);
 
             var proc = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c {findPath} \"{linuxPath}\" -type l -print -quit > \"{resFileLinuxPath}\"",
+                    FileName = symlinkBin,
+                    Arguments = $"-s \"{linuxPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
             };
 
             proc.Start();
-            proc.WaitForExit();
 
-            string status = null;
-
-            for (int i = 0; i < waitLoops * 5; i++)
+            try
             {
-                status = File.ReadAllText(resFilePath);
-                if (!string.IsNullOrWhiteSpace(status))
-                {
-                    break;
-                }
-
-                Thread.Sleep(waitTime);
+                proc.WaitForExit();
+            }
+            catch
+            {
+                FileLogger.Info("Process finished early on directory scan.");
             }
 
-            File.Delete(resFilePath);
+            int exitCode = proc.ExitCode;
 
-            return !string.IsNullOrWhiteSpace(status);
+            if (exitCode <= 0)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         public static void CreateSymlinkLinux(string source, string destination)
@@ -273,14 +263,23 @@ namespace Frosty.Core
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = $"Z:{lnPath}",
-                    Arguments = $"-s \"{sourceLinux}\" \"{destinationLinux}\"",
+                    FileName = symlinkBin,
+                    Arguments = $"-c \"{sourceLinux}\" \"{destinationLinux}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
             };
 
             proc.Start();
+            
+            try
+            {
+                proc.WaitForExit();
+            }
+            catch
+            {
+                FileLogger.Info("Process finished early on symlink creation.");
+            }
 
             for (int i = 0; i < waitLoops; i++)
             {
@@ -306,24 +305,24 @@ namespace Frosty.Core
                 return IsSymbolicLinkLinux(path);
             }
 
-            var isFile = File.Exists(path);
+            var isDirectory = Directory.Exists(path);
 
-            if (!isFile && !Directory.Exists(path))
+            if (!isDirectory && !File.Exists(path))
             {
                 return false;
             }
 
             FileAttributes attributes;
 
-            if (isFile)
-            {
-                var fi = new FileInfo(path);
-                attributes = fi.Attributes;
-            }
-            else
+            if (isDirectory)
             {
                 var di = new DirectoryInfo(path);
                 attributes = di.Attributes;
+            }
+            else
+            {
+                var fi = new FileInfo(path);
+                attributes = fi.Attributes;
             }
 
             return (attributes & FileAttributes.ReparsePoint) != 0;
@@ -345,50 +344,43 @@ namespace Frosty.Core
                 return false;
             }
 
-            var resSufix = GetUniqueExtension();
-            var resFilePath = $"{path}{resSufix}";
-
             var linuxPath = GetLinuxPath(path);
-
-            var resFileLinuxPath = $"{linuxPath}{resSufix}";
 
             var proc = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c {lsPath} -l \"{linuxPath}\" > \"{resFileLinuxPath}\"",
+                    FileName = symlinkBin,
+                    Arguments = $"-v \"{linuxPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
             };
 
             proc.Start();
-            proc.WaitForExit();
 
-            string status = string.Empty;
-
-            for (int i = 0; i < waitLoops; i++)
+            try
             {
-                status = File.ReadAllText(resFilePath);
-
-                if (!string.IsNullOrWhiteSpace(status))
-                {
-                    break;
-                }
-
-                Thread.Sleep(waitTime);
+                proc.WaitForExit();
+            }
+            catch
+            {
+                FileLogger.Info("Process finished early on symlink valdiation.");
             }
 
-            if (string.IsNullOrWhiteSpace(status))
+            int exitCode = proc.ExitCode;
+
+            if (exitCode < 0)
             {
                 FileLogger.Info($"Could not determine if '{path}' is a symbolic link.");
                 throw new Exception($"Could not determine if '{path}' is a symbolic link.");
             }
+            else if (exitCode == 1)
+            {
+                return true;
+            }
 
-            File.Delete(resFilePath);
-
-            return status.ToLower().StartsWith("l");
+            return false;
         }
 
         private static string GetLinuxPath(string path)
@@ -494,11 +486,6 @@ namespace Frosty.Core
             return Path.Combine(realParent, Path.GetFileName(realName));
         }
 
-        private static string GetUniqueExtension()
-        {
-            return $".{Task.CurrentId}.{DateTime.Now:ssfff}.{linuxSufix}";
-        }
-
         private static void TestHardLinks(string modPath)
         {
             var orgFile = Path.Combine(modPath, "hard_link_test.txt");
@@ -539,6 +526,31 @@ namespace Frosty.Core
             File.Delete(orgFile);
 
             _areHardLinksSupported = true;
+        }
+
+        private static bool UpdateEnviromentalVariables()
+        {
+            var envVar = Environment.GetEnvironmentVariable(envVarName);
+
+            if (string.IsNullOrWhiteSpace(envVar))
+            {
+                _areSymLinksLinuxSupported = false;
+                return false;
+            }
+
+            if (envVar != "." && !envVar.Contains(".;") && !envVar.EndsWith(";."))
+            {
+                if (envVar.EndsWith(";"))
+                {
+                    Environment.SetEnvironmentVariable(envVarName, envVar + ".");
+                }
+                else
+                {
+                    Environment.SetEnvironmentVariable(envVarName, envVar + ";.");
+                }
+            }
+
+            return true;
         }
 
         private static bool UpdateRegistry()

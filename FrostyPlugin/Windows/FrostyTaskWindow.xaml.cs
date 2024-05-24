@@ -144,7 +144,7 @@ namespace Frosty.Core.Windows
                 catch (Exception ex)
                 {
                     FileLogger.Init();
-                    FileLogger.Info($"Exception in Task Window: {ex.Message}");
+                    FileLogger.Info($"Exception in Task Window: {ex}");
                 }
             };
 
