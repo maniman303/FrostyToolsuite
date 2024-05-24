@@ -561,12 +561,13 @@ namespace FrostyModManager
             }
         }
 
-        private void packRename_Click(object sender, RoutedEventArgs e) {
-
+        private void packRename_Click(object sender, RoutedEventArgs e)
+        {
             AddProfileWindow win = new AddProfileWindow("Rename Pack");
             win.ShowDialog();
 
-            if (win.DialogResult == true) {
+            if (win.DialogResult == true)
+            {
                 string newPackName = win.ProfileName;
                 var oldPack = selectedPack;
 
@@ -574,9 +575,11 @@ namespace FrostyModManager
                     return a.Name.CompareTo(newPackName) == 0;
                 });
 
-                if (existingPack == null) {
+                if (existingPack == null)
+                {
                     FrostyPack newPack = new FrostyPack(newPackName);
-                    foreach (var mod in oldPack.AppliedMods) {
+                    foreach (var mod in oldPack.AppliedMods)
+                    {
                         newPack.AppliedMods.Add(mod);
                     }
 
@@ -590,16 +593,16 @@ namespace FrostyModManager
                     packsComboBox.SelectedItem = newPack;
                 }
                 else FrostyMessageBox.Show("A pack with the same name already exists", "Frosty Mod Manager");
-
             }
         }
 
-        private void packDuplicate_Click(object sender, RoutedEventArgs e) {
-
+        private void packDuplicate_Click(object sender, RoutedEventArgs e)
+        {
             AddProfileWindow win = new AddProfileWindow("Duplicate Pack");
             win.ShowDialog();
 
-            if (win.DialogResult == true) {
+            if (win.DialogResult == true)
+            {
                 string newPackName = win.ProfileName;
                 var oldPack = selectedPack;
 
@@ -607,11 +610,13 @@ namespace FrostyModManager
                     return a.Name.CompareTo(newPackName) == 0;
                 });
 
-                if (existingPack == null) {
+                if (existingPack == null)
+                {
                     Config.Add(newPackName, ConfigScope.Pack);
 
                     FrostyPack newPack = new FrostyPack(newPackName);
-                    foreach (var mod in oldPack.AppliedMods) {
+                    foreach (var mod in oldPack.AppliedMods)
+                    {
                         newPack.AppliedMods.Add(mod);
                     }
 
@@ -1870,7 +1875,8 @@ namespace FrostyModManager
             CancellationTokenSource cancelToken = new CancellationTokenSource();
 
             bool cancelled = false;
-            FrostyTaskWindow.Show("Updating Actions", "", (task) => {
+            FrostyTaskWindow.Show("Updating Actions", "", (task) =>
+            {
                 try
                 {
                     // Iterate through mod resources
@@ -2235,7 +2241,8 @@ namespace FrostyModManager
             }
         }
 
-        private void collectionModsList_LostFocus(object sender, RoutedEventArgs e) {
+        private void collectionModsList_LostFocus(object sender, RoutedEventArgs e)
+        {
             ((ListView)sender).UnselectAll();
         }
 

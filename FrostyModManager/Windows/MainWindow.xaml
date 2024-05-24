@@ -424,8 +424,10 @@
             <!-- Main Content -->
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="525*" />
+                    <ColumnDefinition Width="93*" />
+                    <ColumnDefinition Width="20*"/>
+                    <ColumnDefinition Width="412*"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Available Mods / Plugins -->
@@ -439,8 +441,7 @@
                             <RowDefinition Height="3*" />
                         </Grid.RowDefinitions>
 
-                        <ctrl:FrostyTabControl x:Name="availableModsTabControl"
-                                               SelectionChanged="tabControl_SelectionChanged">
+                        <ctrl:FrostyTabControl x:Name="availableModsTabControl">
                             <ctrl:FrostyTabControl.Style>
                                 <Style TargetType="{x:Type ctrl:FrostyTabControl}">
                                     <Setter Property="Template">
@@ -1113,13 +1114,12 @@
                 </ctrl:FrostyDockablePanel>
 
                 <GridSplitter Background="Transparent"
-                              VerticalAlignment="Stretch"
                               Width="3"
-                              ResizeDirection="Columns" />
+                              ResizeDirection="Columns" HorizontalAlignment="Left" Margin="522,0,0,0" />
 
                 <!-- Applied Mods / Mod Description / Conflicts -->
                 <ctrl:FrostyDockablePanel Grid.Column="1"
-                                          TitleBarVisible="False">
+                                          TitleBarVisible="False" Grid.ColumnSpan="3">
                     <Grid Background="{StaticResource ListBackground}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="33" />
