@@ -31,6 +31,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
 using System.Media;
+using System.Collections.ObjectModel;
 
 namespace FrostyModManager
 {
@@ -211,12 +212,64 @@ namespace FrostyModManager
         public ModPrimaryActionType PrimaryAction;
         public ModSecondaryActionType SecondaryAction;
         public string Name;
+        public string NiceName;
     }
 
     public class ModResourceInfo
     {
         public string Name { get; }
         public string Type { get; }
+
+        public string ModName
+        {
+            get
+            {
+                return mods.LastOrDefault()?.NiceName ?? string.Empty;
+            }
+        }
+
+        public string Status
+        {
+            get
+            {
+                var mod = mods.LastOrDefault();
+
+                if (mod == null)
+                {
+                    return string.Empty;
+                }
+
+                var sb = new StringBuilder();
+
+                switch (mod.PrimaryAction)
+                {
+                    case ModPrimaryActionType.Add:
+                        sb.Append("Add");
+                        break;
+                    case ModPrimaryActionType.Merge:
+                        sb.Append("Merge");
+                        break;
+                    case ModPrimaryActionType.Modify:
+                        sb.Append("Modify");
+                        break;
+                }
+
+                if (mod.SecondaryAction == ModSecondaryActionType.AddToBundle)
+                {
+                    sb.Append(", Bundle");
+                }
+
+                return sb.ToString();
+            }
+        }
+
+        public string Conflicts
+        {
+            get
+            {
+                return mods.Count > 1 ? "Yes" : "No";
+            }
+        }
 
         public IEnumerable<ModAction> Mods => mods;
         public int ModCount => mods.Count;
@@ -233,7 +286,7 @@ namespace FrostyModManager
             nameHash = Fnv1.HashString(t + "/" + n);
         }
 
-        public void AddMod(string m, ModPrimaryActionType primaryAction, IEnumerable<int> modAddBundles)
+        public void AddMod(FrostyMod mod, ModPrimaryActionType primaryAction, IEnumerable<int> modAddBundles)
         {
             bool isAdded = false;
             if (modAddBundles != null)
@@ -246,7 +299,14 @@ namespace FrostyModManager
                 }
             }
 
-            mods.Add(new ModAction() { Name = m, PrimaryAction = primaryAction, SecondaryAction = (isAdded) ? ModSecondaryActionType.AddToBundle : ModSecondaryActionType.None });
+            mods.Add(
+                new ModAction()
+                {
+                    Name = mod.Filename,
+                    NiceName = mod.ModDetails.Title,
+                    PrimaryAction = primaryAction,
+                    SecondaryAction = (isAdded) ? ModSecondaryActionType.AddToBundle : ModSecondaryActionType.None
+                });
             if (FirstModToModifyIndex == -1)
             {
                 if (primaryAction != ModPrimaryActionType.None)
@@ -291,8 +351,8 @@ namespace FrostyModManager
 
         private IProgress<string> DropProgressReporter => DropProgress;
 
-        private Progress<int> UpdateConflictsProgress;
-        private IProgress<int> UpdateConflictsProgressReporter => UpdateConflictsProgress;
+        private Progress<bool> UpdateConflictsProgress;
+        private IProgress<bool> UpdateConflictsProgressReporter => UpdateConflictsProgress;
 
         public MainWindow()
         {
@@ -318,12 +378,14 @@ namespace FrostyModManager
 
             AllowDrop = true;
 
-            UpdateConflictsProgress = new Progress<int>();
+            UpdateConflictsProgress = new Progress<bool>();
 
             UpdateConflictsProgress.ProgressChanged += (s, arg) =>
             {
-                UpdateConflicts();
+                UpdateConflicts(arg);
             };
+
+            showOnlyReplacementsCheckBox.IsChecked = true;
 
             if (OperatingSystemHelper.IsWine())
             {
@@ -1871,31 +1933,32 @@ namespace FrostyModManager
         {
             if (tabControl.SelectedItem == conflictsTabItem)
             {
-                UpdateConflictsProgressReporter.Report(0);
+                UpdateConflictsProgressReporter.Report(false);
             }
 
             conflictsTabItem.Visibility = Visibility.Visible;
         }
 
-        private void UpdateConflicts()
+        private void UpdateConflicts(bool reset)
         {
-            FileLogger.Info("Start conflicts update.");
+            if (reset)
+            {
+                conflictsListView.ItemsSource = new List<ModResourceInfo>();
 
-            FrostyMessageBox.Show("Frosty might freeze for a minute or two when loading resources of a big mod collection.\r\n", "Warning");
+                return;
+            }
+
+            if (tabControl.SelectedItem != conflictsTabItem)
+            {
+                return;
+            }
+
+            FileLogger.Info("Start conflicts update.");
 
             bool onlyShowReplacements = (bool)showOnlyReplacementsCheckBox.IsChecked;
 
             StringBuilder sb = new StringBuilder();
             List<ModResourceInfo> totalResourceList = new List<ModResourceInfo>();
-
-            List<GridViewColumn> columns = new List<GridViewColumn>
-            {
-                new GridViewColumn
-                {
-                    Header = "Resource",
-                    CellTemplate = conflictsListView.Resources["conflictsNameTemplate"] as DataTemplate
-                }
-            };
 
             CancellationTokenSource cancelToken = new CancellationTokenSource();
 
@@ -1971,7 +2034,7 @@ namespace FrostyModManager
                                                 foreach (string actionString in handler.GetResourceActions(resource.Name, mod.GetResourceData(resource)))
                                                 {
                                                     string[] arr = actionString.Split(';');
-                                                    AddResourceAction(totalResourceList, mod.Filename, arr[0], arr[1], (ModPrimaryActionType)Enum.Parse(typeof(ModPrimaryActionType), arr[2]));
+                                                    AddResourceAction(totalResourceList, mod, arr[0], arr[1], (ModPrimaryActionType)Enum.Parse(typeof(ModPrimaryActionType), arr[2]));
                                                 }
                                                 primaryAction = ModPrimaryActionType.Merge;
                                             }
@@ -1981,7 +2044,7 @@ namespace FrostyModManager
                                     else if (resource.IsAdded) primaryAction = ModPrimaryActionType.Add;
                                     else if (resource.IsModified) primaryAction = ModPrimaryActionType.Modify;
 
-                                    totalResourceList[index].AddMod(mod.Filename, primaryAction, resource.AddedBundles);
+                                    totalResourceList[index].AddMod(mod, primaryAction, resource.AddedBundles);
                                 }
                             }
                         }
@@ -2012,78 +2075,23 @@ namespace FrostyModManager
                 return;
             }
 
-            SetNativeEnabled(this, false);
+            //SetNativeEnabled(this, false);
 
-            var modal = FrostyTaskWindow.ShowSimple("Updating view", "Loading applied mods");
-
-            for (int i = 0; i < selectedPack.AppliedMods.Count; i++)
-            {
-                FileLogger.Info("Applying view changes for a mod.");
-
-                FrostyAppliedMod appliedMod = selectedPack.AppliedMods[i];
-                if (!appliedMod.IsFound || !appliedMod.IsEnabled)
-                    continue;
-
-                Binding primaryActionBinding = new Binding("") { Converter = new ModPrimaryActionConverter(), ConverterParameter = appliedMod.Mod.Filename };
-                Binding primaryTooltipBinding = new Binding("") { Converter = new ModPrimaryActionTooltipConverter(), ConverterParameter = appliedMod.Mod.Filename };
-                Binding secondaryActionBinding = new Binding("") { Converter = new ModSecondaryActionConverter(), ConverterParameter = appliedMod.Mod.Filename };
-                Binding secondaryTooltipBinding = new Binding("") { Converter = new ModSecondaryActionTooltipConverter(), ConverterParameter = appliedMod.Mod.Filename };
-
-                GridViewColumn gvc = new GridViewColumn() { Header = appliedMod.Mod.ModDetails.Title, HeaderTemplate = conflictsListView.Resources["conflictsModHeaderTemplate"] as DataTemplate };
-                DataTemplate dt = new DataTemplate(typeof(Grid));
-
-                FrameworkElementFactory factory = new FrameworkElementFactory(typeof(StackPanel));
-                factory.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
-                factory.SetValue(StackPanel.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-                factory.SetValue(Grid.HeightProperty, 22.0d);
-
-                FrameworkElementFactory img = new FrameworkElementFactory(typeof(Image));
-                img.SetBinding(Image.SourceProperty, primaryActionBinding);
-                img.SetValue(Image.HeightProperty, 18.0d);
-                img.SetValue(Image.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-                img.SetValue(Image.VerticalAlignmentProperty, VerticalAlignment.Center);
-                img.SetValue(Image.OpacityProperty, 0.75d);
-                img.SetValue(Image.ToolTipProperty, primaryTooltipBinding);
-
-                FrameworkElementFactory simg = new FrameworkElementFactory(typeof(Image));
-                simg.SetBinding(Image.SourceProperty, secondaryActionBinding);
-                simg.SetValue(Image.HeightProperty, 18.0d);
-                simg.SetValue(Image.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-                simg.SetValue(Image.VerticalAlignmentProperty, VerticalAlignment.Center);
-                simg.SetValue(Image.OpacityProperty, 0.75d);
-                simg.SetValue(Image.ToolTipProperty, secondaryTooltipBinding);
-
-                factory.AppendChild(img);
-                factory.AppendChild(simg);
-
-                dt.VisualTree = factory;
-                gvc.CellTemplate = dt;
-                gvc.Width = 150;
-
-                columns.Add(gvc);
-            }
-
-            GridView gv = conflictsListView.View as GridView;
-
-            gv.Columns.Clear();
-            foreach (GridViewColumn gvc in columns)
-            {
-                gv.Columns.Add(gvc);
-            }
+            //var modal = FrostyTaskWindow.ShowSimple("Updating view", "Loading applied mods");
 
             tabControl.SelectedItem = conflictsTabItem;
 
             conflictsListView.ItemsSource = totalResourceList;
             conflictsListView.SelectedIndex = 0;
 
-            SetNativeEnabled(this, true);
+            //SetNativeEnabled(this, true);
 
-            modal.Close();
+            //modal.Close();
 
             FileLogger.Info("Finished conflicts update.");
         }
 
-        private void AddResourceAction(List<ModResourceInfo> totalResourceList, string modName, string resourceName, string resourceType, ModPrimaryActionType type)
+        private void AddResourceAction(List<ModResourceInfo> totalResourceList, FrostyMod mod, string resourceName, string resourceType, ModPrimaryActionType type)
         {
             int index = totalResourceList.FindIndex((ModResourceInfo a) => a.Equals(resourceType + "/" + resourceName));
             if (index == -1)
@@ -2093,15 +2101,12 @@ namespace FrostyModManager
                 index = totalResourceList.Count - 1;
             }
 
-            totalResourceList[index].AddMod(modName, type, null);
+            totalResourceList[index].AddMod(mod, type, null);
         }
 
         private void tabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (conflictsTabItem.IsSelected)
-            {
-                UpdateConflictsProgressReporter.Report(0);
-            }
+            UpdateConflictsProgressReporter.Report(!conflictsTabItem.IsSelected);
         }
 
         private void launchConfigurationWindow_Click(object sender, RoutedEventArgs e)
@@ -2137,11 +2142,6 @@ namespace FrostyModManager
             }
 
             availableModsList.Items.Filter = new Predicate<object>((object a) => ((IFrostyMod)a).ModDetails.Title.ToLower().Contains(availableModsFilterTextBox.Text.ToLower()));
-        }
-
-        private void PART_ShowOnlyReplacementsCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            UpdateConflictsProgressReporter.Report(0);
         }
 
         private void optionsMenuItem_Click(object sender, RoutedEventArgs e)
@@ -2369,6 +2369,34 @@ namespace FrostyModManager
                 };
                 foundMenuItem.Items.Add(menuExtItem);
             }
+        }
+
+        private void ConflictsHandleDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var obj = conflictsListView.SelectedItem;
+
+            if (obj == null)
+            {
+                return;
+            }
+
+            var modInfo = obj as ModResourceInfo;
+
+            var sb = new StringBuilder();
+
+            sb.Append($"List of mods altering resource\r\n'{modInfo.Name}'\r\n");
+
+            foreach (var mod in modInfo.Mods)
+            {
+                sb.Append($"\r\n • {mod.NiceName}"); 
+            }
+
+            FrostyMessageBox.Show(sb.ToString(), "Resource conflicts");
+        }
+
+        private void showOnlyReplacementsCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateConflictsProgressReporter.Report(false);
         }
     }
 }

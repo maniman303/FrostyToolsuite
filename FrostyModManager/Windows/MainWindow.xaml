@@ -1518,8 +1518,8 @@
                                                     <CheckBox x:Name="showOnlyReplacementsCheckBox"
                                                               VerticalAlignment="Center"
                                                               Margin="0,0,0,0"
-                                                              Checked="PART_ShowOnlyReplacementsCheckBox_Checked">
-                                                        <TextBlock Text="Show only replacements"
+                                                              Click="showOnlyReplacementsCheckBox_Click">
+                                                        <TextBlock Text="Show conflicts only"
                                                                    Margin="4,-1,0,0"
                                                                    VerticalAlignment="Center"
                                                                    Foreground="{StaticResource FontColor}" />
@@ -1537,57 +1537,23 @@
                                     <Border Grid.Row="1"
                                             Background="{StaticResource ListBackground}"
                                             Margin="2">
-                                        <ListView x:Name="conflictsListView">
-                                            <ListView.Resources>
-                                                <local:ModPrimaryActionConverter x:Key="ModPrimaryActionConverter" />
-                                                <DataTemplate x:Key="conflictsNameHeaderTemplate">
-                                                    <TextBlock Text="{Binding Path=.}"
-                                                               VerticalAlignment="Center"
-                                                               Margin="0,0,8,0"
-                                                               TextTrimming="CharacterEllipsis" />
-                                                </DataTemplate>
-                                                <DataTemplate x:Key="conflictsModHeaderTemplate">
-                                                    <TextBlock Text="{Binding Path=.}"
-                                                               VerticalAlignment="Center"
-                                                               Margin="0,0,8,0"
-                                                               HorizontalAlignment="Center"
-                                                               TextTrimming="CharacterEllipsis" />
-                                                </DataTemplate>
-                                                <DataTemplate x:Key="conflictsNameTemplate">
-                                                    <StackPanel Height="22"
-                                                                Orientation="Horizontal">
-                                                        <Image x:Name="typeImage"
-                                                               Source="/FrostyModManager;component/Images/Ebx.png"
-                                                               Margin="0,0,4,0"
-                                                               Height="18" />
-                                                        <TextBlock Text="{Binding Path=Name}"
-                                                                   FontFamily="Consolas"
-                                                                   VerticalAlignment="Center" />
-                                                    </StackPanel>
-                                                    <DataTemplate.Triggers>
-                                                        <DataTrigger Binding="{Binding Path=Type}"
-                                                                     Value="res">
-                                                            <Setter TargetName="typeImage"
-                                                                    Property="Source"
-                                                                    Value="/FrostyModManager;component/Images/Res.png" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Path=Type}"
-                                                                     Value="chunk">
-                                                            <Setter TargetName="typeImage"
-                                                                    Property="Source"
-                                                                    Value="/FrostyModManager;component/Images/Chunk.png" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Path=Type}"
-                                                                     Value="legacy">
-                                                            <Setter TargetName="typeImage"
-                                                                    Property="Source"
-                                                                    Value="/FrostyModManager;component/Images/Legacy.png" />
-                                                        </DataTrigger>
-                                                    </DataTemplate.Triggers>
-                                                </DataTemplate>
-                                            </ListView.Resources>
+                                        <ListView x:Name="conflictsListView" MouseDoubleClick="ConflictsHandleDoubleClick">
+                                            <ListView.ItemContainerStyle>
+                                                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource baseListViewItemStyle}">
+                                                    <Setter Property="ToolTip">
+                                                        <Setter.Value>
+                                                            <TextBlock Text="Double click to show list of all mods altering this resource"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </ListView.ItemContainerStyle>
                                             <ListView.View>
-                                                <GridView ColumnHeaderTemplate="{StaticResource conflictsNameHeaderTemplate}" />
+                                                <GridView AllowsColumnReorder="false" >
+                                                    <GridViewColumn DisplayMemberBinding="{Binding Path=Name}" Header="Resource" Width="auto"/>
+                                                    <GridViewColumn DisplayMemberBinding="{Binding Path=ModName}" Header="Mod" Width="auto"/>
+                                                    <GridViewColumn DisplayMemberBinding="{Binding Path=Status}" Header="Status" Width="auto"/>
+                                                    <GridViewColumn DisplayMemberBinding="{Binding Path=Conflicts}" Header="Conflicts" Width="auto"/>
+                                                </GridView>
                                             </ListView.View>
                                         </ListView>
                                     </Border>
