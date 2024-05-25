@@ -1,12 +1,14 @@
 # FrostyToolsuite Linux version
 The most advanced modding platform for games running on DICE's Frostbite game engine.
 
-Uses [VersionProxy](https://github.com/maniman303/frosty-version-proxy) and [CryptHook](https://github.com/maniman303/CryptHook).
+Uses [VersionProxy](https://github.com/maniman303/frosty-version-proxy), [CryptHook](https://github.com/maniman303/CryptHook) and [Wine-symlink-helper](https://github.com/maniman303/wine-symlink-helper).
 
 ## Changes in this fork
 
 - Fixed symbolic linking of files in mod deployment.
 - Added hard linking option for mod deployment (on by default).
+- Reworked actions tab and fixed performance.
+- Fixed drag and drop on Linux.
 - Fixed game icons on Linux.
 - Added `Install mods` button.
 - Fixed `BCryptVerifySignature` patching with [VersionProxy](https://github.com/maniman303/frosty-version-proxy) and [CryptHook](https://github.com/maniman303/CryptHook).
@@ -49,22 +51,13 @@ Cons:
 
 Even if Linux supports symbolic links just fine, Wine does not implement their support at all. But fortunately there is a loop hole, that allowed me to *reimplement* symbolic links under Wine.
 
-According to [WineFAQ](https://wiki.winehq.org/FAQ) you can run native Linux binaries from *Windows* program (with some caveats, but more on this later), but do so you need to update one key in registry. And yet, this is only half way true, as actually this registry key is passed down as an environmental variable to all processes. And in both Windows and Linux code, we can adjust environmental variables of the new process we are about to run. In my implementation - just to be safe - I edit registry and update variables.
-
-With this knowledge I'm using following Linux binaries to achieve sym links functionality:
-- `/bin/ls` to test if file or directory is a symbolic link
-- `/bin/ln` to create symbolic links
-- `/bin/rm` to safely remove symbolic link
-- `/bin/find` to test if provided directory contains symlinks
+I've implemented simple [Wine-symlink-helper](https://github.com/maniman303/wine-symlink-helper) program, that allows me to perform basic symbolic link operations under Frosty. For whatever reason output redirection doesn't work, so I had to substitute proper communication with exit code reading. Still, it does its job.
 
 To translate Windows paths to Linux I'm using `winepath.exe` from Wine.
 
 Unfortunately, there are some issues with this hack of a proper solution.
-- We cannot redirect output of Linux native binary into out Windows .NET program. Idk why, but because of this, while using `/bin/ls` or `/bin/find`, I had to run these binaries in `cmd` and redirect the output to a real file, so later I could read the result from this file. I believe I don't have to mention it's a multi threading safety nightmare.
-- Performance. Running a whole new process (or sometimes even two) to create/remove/check file increases time spent on the operation tens or hundreds times. Frosty has a case where it has to scan provided directory to check if any symbolic link exists there, including sub directories. Even when using BFS search with running checks in parallel multitasking, scanning hard linked Dragon Age Inquisition mod directory (without a single symbolic link) takes on my Steam Deck 3 minutes. On Windows the same algorithm took a mere second. Because of this I had to be creative and use `/bin/find`, which does the job well, but long term I don't see it viable to look for different binaries and commands for every single use case.
-- Compatibility is also an issue here, because I cannot guarantee that every distro will have binaries, mentioned earlier, existing or in right place. Because of this, in code, I try to test support for symbolic and hard links, but it's not a guarantee.
-
-But there is another approach I would like to investigate in the future: [WineLib](https://wiki.winehq.org/Winelib).
+- Performance. Running a whole new process to create/remove/check file increases time spent on the operation tens or hundreds times. Frosty has a case where it has to scan provided directory to check if any symbolic link exists there, including sub directories. Even when using BFS search with running checks in parallel multitasking, scanning hard linked Dragon Age Inquisition mod directory (without a single symbolic link) takes on my Steam Deck 3 minutes. On Windows the same algorithm took a mere second. Because of this I had to reimplement algorithm with C++ in [Wine-symlink-helper](https://github.com/maniman303/wine-symlink-helper), which does the job well, but long term I don't see it viable to every single every single use case.
+- Compatibility is also an issue here, because we can't assume that the binary will always work. Because of this, in code, I try to test support for symbolic and hard links, but it's not a guarantee.
 
 ## Setup
 
