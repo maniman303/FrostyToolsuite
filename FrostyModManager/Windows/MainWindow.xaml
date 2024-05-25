@@ -1547,7 +1547,7 @@
                                                 <StackPanel VerticalAlignment="Center"
                                                             Orientation="Horizontal"
                                                             Margin="0,0,0,0">
-                                                    <TextBlock x:Name="conflictsPageText" Text=" Page "/>
+                                                    <TextBlock x:Name="conflictsPageText" Text="  Page   "/>
                                                 </StackPanel>
                                             </Border>
                                             <Border Background="{StaticResource ControlBackground}"

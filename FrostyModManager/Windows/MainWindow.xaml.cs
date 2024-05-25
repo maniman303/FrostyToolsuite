@@ -356,7 +356,7 @@ namespace FrostyModManager
 
         private List<ModResourceInfo> ConflictInfos = new List<ModResourceInfo>();
         private int ConflictPage = 0;
-        private const int ConflictPageSize = 40;
+        private const int ConflictPageSize = 34;
 
         public MainWindow()
         {
@@ -1965,120 +1965,105 @@ namespace FrostyModManager
             StringBuilder sb = new StringBuilder();
             List<ModResourceInfo> totalResourceList = new List<ModResourceInfo>();
 
-            CancellationTokenSource cancelToken = new CancellationTokenSource();
+            //SetNativeEnabled(this, false);
 
-            bool cancelled = false;
-            FrostyTaskWindow.Show("Updating Actions", "", (logger) =>
+            var modal = FrostyTaskWindow.ShowSimple("Updating Actions", "");
+
+            // Iterate through mod resources
+            for (int i = 0; i < selectedPack.AppliedMods.Count; i++)
             {
-                try
+                FrostyAppliedMod appliedMod = selectedPack.AppliedMods[i];
+                if (!appliedMod.IsFound || !appliedMod.IsEnabled)
+                    continue;
+
+
+                FrostyMod[] mods;
+                if (appliedMod.Mod is FrostyModCollection)
                 {
-                    // Iterate through mod resources
-                    for (int i = 0; i < selectedPack.AppliedMods.Count; i++)
+                    mods = (appliedMod.Mod as FrostyModCollection).Mods.ToArray();
+                }
+                else
+                {
+                    mods = new FrostyMod[1];
+                    mods[0] = appliedMod.Mod as FrostyMod;
+                }
+
+                foreach (var mod in mods)
+                {
+                    if (mod.NewFormat)
                     {
-                        FrostyAppliedMod appliedMod = selectedPack.AppliedMods[i];
-                        if (!appliedMod.IsFound || !appliedMod.IsEnabled)
-                            continue;
-
-
-                        FrostyMod[] mods;
-                        if (appliedMod.Mod is FrostyModCollection)
+                        foreach (BaseModResource resource in mod.Resources)
                         {
-                            mods = (appliedMod.Mod as FrostyModCollection).Mods.ToArray();
-                        }
-                        else
-                        {
-                            mods = new FrostyMod[1];
-                            mods[0] = appliedMod.Mod as FrostyMod;
-                        }
+                            if (resource.Type == ModResourceType.Embedded)
+                                continue;
 
-                        foreach (var mod in mods)
-                        {
-                            if (mod.NewFormat)
+                            string resType = resource.Type.ToString().ToLower();
+                            string resourceName = resource.Name;
+
+                            if (resource.UserData != "")
                             {
-                                foreach (BaseModResource resource in mod.Resources)
+                                string[] arr = resource.UserData.Split(';');
+                                resType = arr[0].ToLower();
+                                resourceName = arr[1];
+                            }
+
+                            int index = totalResourceList.FindIndex((ModResourceInfo a) => a.Equals(resType + "/" + resourceName));
+
+                            if (index == -1)
+                            {
+                                ModResourceInfo resInfo = new ModResourceInfo(resourceName, resType);
+                                totalResourceList.Add(resInfo);
+                                index = totalResourceList.Count - 1;
+                            }
+
+                            ModPrimaryActionType primaryAction = ModPrimaryActionType.None;
+                            if (resource.HasHandler)
+                            {
+                                if ((uint)resource.Handler == 0xBD9BFB65)
+                                    primaryAction = ModPrimaryActionType.Merge;
+                                else
                                 {
-                                    if (resource.Type == ModResourceType.Embedded)
-                                        continue;
+                                    ICustomActionHandler handler = null;
+                                    if (resource.Type == ModResourceType.Ebx)
+                                        handler = App.PluginManager.GetCustomHandler((uint)resource.Handler);
+                                    else if (resource.Type == ModResourceType.Res)
+                                        handler = App.PluginManager.GetCustomHandler((ResourceType)(resource as ResResource).ResType);
 
-                                    string resType = resource.Type.ToString().ToLower();
-                                    string resourceName = resource.Name;
-
-                                    if (resource.UserData != "")
+                                    if (handler.Usage == HandlerUsage.Merge)
                                     {
-                                        string[] arr = resource.UserData.Split(';');
-                                        resType = arr[0].ToLower();
-                                        resourceName = arr[1];
-                                    }
-
-                                    int index = totalResourceList.FindIndex((ModResourceInfo a) => a.Equals(resType + "/" + resourceName));
-
-                                    if (index == -1)
-                                    {
-                                        ModResourceInfo resInfo = new ModResourceInfo(resourceName, resType);
-                                        totalResourceList.Add(resInfo);
-                                        index = totalResourceList.Count - 1;
-                                    }
-
-                                    cancelToken.Token.ThrowIfCancellationRequested();
-
-                                    ModPrimaryActionType primaryAction = ModPrimaryActionType.None;
-                                    if (resource.HasHandler)
-                                    {
-                                        if ((uint)resource.Handler == 0xBD9BFB65)
-                                            primaryAction = ModPrimaryActionType.Merge;
-                                        else
+                                        foreach (string actionString in handler.GetResourceActions(resource.Name, mod.GetResourceData(resource)))
                                         {
-                                            ICustomActionHandler handler = null;
-                                            if (resource.Type == ModResourceType.Ebx)
-                                                handler = App.PluginManager.GetCustomHandler((uint)resource.Handler);
-                                            else if (resource.Type == ModResourceType.Res)
-                                                handler = App.PluginManager.GetCustomHandler((ResourceType)(resource as ResResource).ResType);
-
-                                            if (handler.Usage == HandlerUsage.Merge)
-                                            {
-                                                foreach (string actionString in handler.GetResourceActions(resource.Name, mod.GetResourceData(resource)))
-                                                {
-                                                    string[] arr = actionString.Split(';');
-                                                    AddResourceAction(totalResourceList, mod, arr[0], arr[1], (ModPrimaryActionType)Enum.Parse(typeof(ModPrimaryActionType), arr[2]));
-                                                }
-                                                primaryAction = ModPrimaryActionType.Merge;
-                                            }
-                                            else primaryAction = ModPrimaryActionType.Modify;
+                                            string[] arr = actionString.Split(';');
+                                            AddResourceAction(totalResourceList, mod, arr[0], arr[1], (ModPrimaryActionType)Enum.Parse(typeof(ModPrimaryActionType), arr[2]));
                                         }
+                                        primaryAction = ModPrimaryActionType.Merge;
                                     }
-                                    else if (resource.IsAdded) primaryAction = ModPrimaryActionType.Add;
-                                    else if (resource.IsModified) primaryAction = ModPrimaryActionType.Modify;
-
-                                    totalResourceList[index].AddMod(mod, primaryAction, resource.AddedBundles);
+                                    else primaryAction = ModPrimaryActionType.Modify;
                                 }
                             }
+                            else if (resource.IsAdded) primaryAction = ModPrimaryActionType.Add;
+                            else if (resource.IsModified) primaryAction = ModPrimaryActionType.Modify;
+
+                            totalResourceList[index].AddMod(mod, primaryAction, resource.AddedBundles);
                         }
                     }
-
                 }
-                catch (OperationCanceledException)
-                {
-                    cancelled = true;
-                }
-
-                if (onlyShowReplacements)
-                {
-                    totalResourceList.RemoveAll(item => item.ModCount <= 1);
-                }
-
-                totalResourceList.Sort((ModResourceInfo a, ModResourceInfo b) =>
-                {
-                    int result = a.Type[1].CompareTo(b.Type[1]);
-                    return result == 0 ? a.Name.CompareTo(b.Name) : result;
-                });
-            }, showCancelButton: true, cancelCallback: (task) => cancelToken.Cancel());
-
-            if (cancelled)
-            {
-                FileLogger.Info("Update was canceled.");
-                tabControl.SelectedItem = appliedModsTabItem;
-                return;
             }
+
+            if (onlyShowReplacements)
+            {
+                totalResourceList.RemoveAll(item => item.ModCount <= 1);
+            }
+
+            totalResourceList.Sort((ModResourceInfo a, ModResourceInfo b) =>
+            {
+                int result = a.Type[1].CompareTo(b.Type[1]);
+                return result == 0 ? a.Name.CompareTo(b.Name) : result;
+            });
+
+            modal.Close();
+
+            //SetNativeEnabled(this, true);
 
             tabControl.SelectedItem = conflictsTabItem;
 
@@ -2405,7 +2390,7 @@ namespace FrostyModManager
                 page = 0;
             }
 
-            int maxPage = (ConflictInfos.Count / ConflictPageSize) - (ConflictInfos.Count % ConflictPageSize == 0 ? 1 : 0);
+            int maxPage = (ConflictInfos.Count / ConflictPageSize) - ((ConflictInfos.Count % ConflictPageSize == 0 && ConflictInfos.Count > 0) ? 1 : 0);
 
             if (page > maxPage)
             {
@@ -2418,7 +2403,7 @@ namespace FrostyModManager
             // TODO: Update UI
             conflictsPrev.IsEnabled = page > 0;
             conflictsNext.IsEnabled = page < maxPage;
-            conflictsPageText.Text = $" Page {page + 1} ";
+            conflictsPageText.Text = $"  Page {page + 1}  ";
 
             conflictsListView.ItemsSource = items;
         }
