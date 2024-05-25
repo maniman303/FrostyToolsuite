@@ -1,4 +1,4 @@
-# FrostyToolsuite Linux version
+# FrostyToolSuite Linux version
 The most advanced modding platform for games running on DICE's Frostbite game engine.
 
 Uses [VersionProxy](https://github.com/maniman303/frosty-version-proxy), [CryptHook](https://github.com/maniman303/CryptHook) and [Wine-symlink-helper](https://github.com/maniman303/wine-symlink-helper).
