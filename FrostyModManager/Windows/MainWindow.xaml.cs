@@ -1966,6 +1966,7 @@ namespace FrostyModManager
             List<ModResourceInfo> totalResourceList = new List<ModResourceInfo>();
 
             //SetNativeEnabled(this, false);
+            IsEnabled = false;
 
             var modal = FrostyTaskWindow.ShowSimple("Updating Actions", "");
 
@@ -2064,6 +2065,7 @@ namespace FrostyModManager
             modal.Close();
 
             //SetNativeEnabled(this, true);
+            IsEnabled = true;
 
             tabControl.SelectedItem = conflictsTabItem;
 

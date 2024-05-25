@@ -1075,6 +1075,11 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="{StaticResource ListBackground}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <!-- TreeView -->
@@ -1550,6 +1555,12 @@
                 Value="Transparent" />
         <Setter Property="Foreground"
                 Value="{StaticResource FontColor}" />
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="{StaticResource ListBackground}"/>
+                <Setter Property="Foreground" Value="{StaticResource FontColor}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <!-- GridViewColumnHeader -->
@@ -1658,6 +1669,11 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="{StaticResource ListBackground}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <!-- ListViewItem -->

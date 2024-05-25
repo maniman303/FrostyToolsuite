@@ -781,7 +781,6 @@
                                               FocusManager.IsFocusScope="True">
                                         <ListView.View>
                                             <GridView ScrollViewer.CanContentScroll="False">
-
                                                 <GridView.Columns>
                                                     <GridViewColumn Header="Title"
                                                                     Width="410">
@@ -1586,7 +1585,7 @@
                                                 </Style>
                                             </ListView.ItemContainerStyle>
                                             <ListView.View>
-                                                <GridView AllowsColumnReorder="false" >
+                                                <GridView AllowsColumnReorder="false">
                                                     <GridViewColumn DisplayMemberBinding="{Binding Path=Name}" Header="Resource" Width="auto"/>
                                                     <GridViewColumn DisplayMemberBinding="{Binding Path=ModName}" Header="Mod" Width="auto"/>
                                                     <GridViewColumn DisplayMemberBinding="{Binding Path=Status}" Header="Status" Width="auto"/>
