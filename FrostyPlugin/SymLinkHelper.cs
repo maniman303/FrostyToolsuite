@@ -131,6 +131,8 @@ namespace Frosty.Core
                 FileLogger.Info("Process finished early on directory delete.");
             }
 
+            proc.Close();
+
             for (int i = 0; i < waitLoops; i++)
             {
                 if (!Directory.Exists(path))
@@ -142,6 +144,8 @@ namespace Frosty.Core
             }
 
             FileLogger.Info($"Could not determine if directory '{path}' was removed.");
+
+            throw new Exception($"Could not determine if directory '{path}' was removed.");
         }
 
         public static void DeleteFileSafe(string path)
@@ -180,6 +184,8 @@ namespace Frosty.Core
                 FileLogger.Info("Process finished early on file delete.");
             }
 
+            proc.Close();
+
             for (int i = 0; i < waitLoops; i++)
             {
                 if (!File.Exists(path))
@@ -191,6 +197,8 @@ namespace Frosty.Core
             }
 
             FileLogger.Info($"Could not determine if file '{path}' was removed.");
+
+            throw new Exception($"Could not determine if file '{path}' was removed.");
         }
 
         public static bool DoesDirectoryContainSymLinks(string path)
@@ -225,9 +233,26 @@ namespace Frosty.Core
                 FileLogger.Info("Process finished early on directory scan.");
             }
 
-            int exitCode = proc.ExitCode;
+            int exitCode;
 
-            if (exitCode <= 0)
+            try
+            {
+                exitCode = proc.ExitCode;
+            }
+            catch
+            {
+                FileLogger.Info("Could not retrieve exit code for directory scan.");
+                throw new Exception("Could not retrieve exit code for directory scan.");
+            }
+
+            proc.Close();
+
+            if (exitCode < 0)
+            {
+                throw new Exception("Could not determine if directory has symbolic links.");
+            }
+
+            if (exitCode == 0)
             {
                 return false;
             }
@@ -281,6 +306,8 @@ namespace Frosty.Core
                 FileLogger.Info("Process finished early on symlink creation.");
             }
 
+            proc.Close();
+
             for (int i = 0; i < waitLoops; i++)
             {
                 if (isDirectory && Directory.Exists(destination))
@@ -295,7 +322,8 @@ namespace Frosty.Core
                 Thread.Sleep(waitTime);
             }
 
-            FileLogger.Info($"Could not determine if sym link was created for source '{source}' and destination '{destination}'");
+            FileLogger.Info($"Could not determine if sym link was created for source '{source}' and destination '{destination}'.");
+            throw new Exception($"Could not determine if sym link was created for source '{source}' and destination '{destination}'.");
         }
 
         public static bool IsSymbolicLink(string path)
@@ -337,9 +365,7 @@ namespace Frosty.Core
 
             path = CleanPath(path);
 
-            var isFile = File.Exists(path);
-
-            if (!isFile && !Directory.Exists(path))
+            if (!Directory.Exists(path) && !File.Exists(path))
             {
                 return false;
             }
@@ -368,7 +394,20 @@ namespace Frosty.Core
                 FileLogger.Info("Process finished early on symlink valdiation.");
             }
 
-            int exitCode = proc.ExitCode;
+
+            int exitCode;
+
+            try
+            {
+                exitCode = proc.ExitCode;
+            }
+            catch
+            {
+                FileLogger.Info("Could not retrieve exit code for symbolic link check.");
+                throw new Exception("Could not retrieve exit code for symbolic link check.");
+            }
+
+            proc.Close();
 
             if (exitCode < 0)
             {
@@ -401,10 +440,13 @@ namespace Frosty.Core
             };
 
             proc.Start();
+
             while (!proc.StandardOutput.EndOfStream)
             {
                 linuxPath = proc.StandardOutput.ReadLine();
             }
+
+            proc.Close();
 
             linuxPath = CleanPath(linuxPath);
 

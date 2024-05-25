@@ -1909,8 +1909,20 @@ namespace Frosty.ModSupport
             Logger = inLogger;
 
             string modDataPath = fs.BasePath + modDirName + "\\";
+            int installRes;
 
-            int installRes = InstallMods(cancelToken, rootPath, modDataPath, modPackName, modPaths);
+            try
+            {
+                installRes = InstallMods(cancelToken, rootPath, modDataPath, modPackName, modPaths);
+            }
+            catch (OperationCanceledException oce)
+            {
+                throw oce;
+            }
+            catch
+            {
+                return -1;
+            }
 
             if (installRes != 0)
             {
