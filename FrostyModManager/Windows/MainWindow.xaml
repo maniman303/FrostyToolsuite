@@ -1526,6 +1526,44 @@
                                                     </CheckBox>
                                                 </StackPanel>
                                             </Border>
+                                            <Border Background="{StaticResource ControlBackground}"
+                                                    DockPanel.Dock="Left"
+                                                    RenderOptions.EdgeMode="Aliased"
+                                                    Margin="1,0,0,0">
+                                                <StackPanel VerticalAlignment="Center"
+                                                            Orientation="Horizontal"
+                                                            Margin="0,0,0,0">
+                                                    <Button x:Name="conflictsPrev"
+                                                            IsEnabled="False"
+                                                            Click="conflictsPrev_Click">
+                                                        <TextBlock Text=" &lt; "/>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Background="{StaticResource ControlBackground}"
+                                                    DockPanel.Dock="Left"
+                                                    RenderOptions.EdgeMode="Aliased"
+                                                    Margin="1,0,0,0">
+                                                <StackPanel VerticalAlignment="Center"
+                                                            Orientation="Horizontal"
+                                                            Margin="0,0,0,0">
+                                                    <TextBlock x:Name="conflictsPageText" Text=" Page "/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Background="{StaticResource ControlBackground}"
+                                                    DockPanel.Dock="Left"
+                                                    RenderOptions.EdgeMode="Aliased"
+                                                    Margin="1,0,0,0">
+                                                <StackPanel VerticalAlignment="Center"
+                                                            Orientation="Horizontal"
+                                                            Margin="0,0,0,0">
+                                                    <Button x:Name="conflictsNext"
+                                                            IsEnabled="False"
+                                                            Click="conflictsNext_Click">
+                                                        <TextBlock Text=" > "/>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Border>
                                             <!-- Filler -->
                                             <Border Background="Transparent"
                                                     Margin="1,0,0,0"
@@ -1542,7 +1580,7 @@
                                                 <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource baseListViewItemStyle}">
                                                     <Setter Property="ToolTip">
                                                         <Setter.Value>
-                                                            <TextBlock Text="Double click to show list of all mods altering this resource"/>
+                                                            <TextBlock Text="Double click to show a list of all mods altering this resource"/>
                                                         </Setter.Value>
                                                     </Setter>
                                                 </Style>

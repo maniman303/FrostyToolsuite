@@ -354,6 +354,10 @@ namespace FrostyModManager
         private Progress<bool> UpdateConflictsProgress;
         private IProgress<bool> UpdateConflictsProgressReporter => UpdateConflictsProgress;
 
+        private List<ModResourceInfo> ConflictInfos = new List<ModResourceInfo>();
+        private int ConflictPage = 0;
+        private const int ConflictPageSize = 40;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -1943,7 +1947,8 @@ namespace FrostyModManager
         {
             if (reset)
             {
-                conflictsListView.ItemsSource = new List<ModResourceInfo>();
+                ConflictInfos.Clear();
+                SetConflictPage(0);
 
                 return;
             }
@@ -2075,18 +2080,12 @@ namespace FrostyModManager
                 return;
             }
 
-            //SetNativeEnabled(this, false);
-
-            //var modal = FrostyTaskWindow.ShowSimple("Updating view", "Loading applied mods");
-
             tabControl.SelectedItem = conflictsTabItem;
 
-            conflictsListView.ItemsSource = totalResourceList;
+            ConflictInfos.Clear();
+            ConflictInfos.AddRange(totalResourceList);
+            SetConflictPage(0);
             conflictsListView.SelectedIndex = 0;
-
-            //SetNativeEnabled(this, true);
-
-            //modal.Close();
 
             FileLogger.Info("Finished conflicts update.");
         }
@@ -2397,6 +2396,43 @@ namespace FrostyModManager
         private void showOnlyReplacementsCheckBox_Click(object sender, RoutedEventArgs e)
         {
             UpdateConflictsProgressReporter.Report(false);
+        }
+
+        private void SetConflictPage(int page)
+        {
+            if (page < 0)
+            {
+                page = 0;
+            }
+
+            int maxPage = (ConflictInfos.Count / ConflictPageSize) - (ConflictInfos.Count % ConflictPageSize == 0 ? 1 : 0);
+
+            if (page > maxPage)
+            {
+                page = maxPage;
+            }
+
+            ConflictPage = page;
+            var items = ConflictInfos.Skip(ConflictPageSize * page).Take(ConflictPageSize).ToList();
+
+            // TODO: Update UI
+            conflictsPrev.IsEnabled = page > 0;
+            conflictsNext.IsEnabled = page < maxPage;
+            conflictsPageText.Text = $" Page {page + 1} ";
+
+            conflictsListView.ItemsSource = items;
+        }
+
+        private void conflictsPrev_Click(object sender, RoutedEventArgs e)
+        {
+            ConflictPage--;
+            SetConflictPage(ConflictPage);
+        }
+
+        private void conflictsNext_Click(object sender, RoutedEventArgs e)
+        {
+            ConflictPage++;
+            SetConflictPage(ConflictPage);
         }
     }
 }
