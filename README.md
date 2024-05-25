@@ -13,6 +13,7 @@ Uses [VersionProxy](https://github.com/maniman303/frosty-version-proxy), [CryptH
 - Added `Install mods` button.
 - Fixed `BCryptVerifySignature` patching with [VersionProxy](https://github.com/maniman303/frosty-version-proxy) and [CryptHook](https://github.com/maniman303/CryptHook).
 - Fixed multi threading issues in the program.
+- Fixed minimize, maximize, close buttons on Linux.
 - Disabled auto update.
 - Updated project to .NET framework 4.8.1.
 
