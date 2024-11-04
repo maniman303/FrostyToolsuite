@@ -11,6 +11,7 @@ using Frosty.Controls;
 using Frosty.Core;
 using FrostySdk.IO;
 using FrostySdk.Managers;
+using System.Linq;
 
 namespace FrostyModManager.Windows
 {
@@ -96,8 +97,48 @@ namespace FrostyModManager.Windows
             splashWin.Show();
         }
 
+        private bool ValidateWorkingDir()
+        {
+            var dir = Directory.GetCurrentDirectory();
+
+            var files = Directory.GetFiles(dir).Select(x => new FileInfo(x)).Select(x => x.Name.ToLower()).ToList();
+
+            if (files.All(x => x != "frostymodmanager.exe"))
+            {
+                return false;
+            }
+
+            if (files.All(x => x != "frostysdk.dll"))
+            {
+                return false;
+            }
+
+            if (files.All(x => x != "frostycore.dll"))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            //TODO: Test read access in working dir and if frosty exe exists in working dir
+            if (!ValidateWorkingDir())
+            {
+                var message = "Working directory does not match Frosty Mod Manager installation location.\r\n";
+
+                if (OperatingSystemHelper.IsWine())
+                {
+                    message += "\r\nOn Linux make sure Frosty Mod Manager is run from a directory accessible via a Wine drive.\r\n";
+                    message += "If Wine is run from a Flatpak application, make sure that application has access to the Frosty Mod Manager location (can be set up with Flatseal).";
+                }
+
+                FrostyMessageBox.Show(message, "Frosty Mod Manager");
+                Close();
+                return;
+            }
+
             RefreshConfigurationList();
 
             RemoveConfigButton.IsEnabled = false;
