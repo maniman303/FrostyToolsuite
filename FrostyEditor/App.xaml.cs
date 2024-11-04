@@ -281,7 +281,7 @@ namespace FrostyEditor
                     });
                 }
             }
-            catch (Exception e)
+            catch
             {
                 // System.Threading.Tasks.Task.Run(() => {
                 //     FrostyMessageBox.Show("Frosty Update Checker returned with an error:" + Environment.NewLine + e.Message, "Frosty Editor", MessageBoxButton.OK);

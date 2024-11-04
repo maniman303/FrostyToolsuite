@@ -17,6 +17,7 @@ namespace Frosty.Core
         /// <summary>
         /// Registers key bindings to a <see cref="CommandBindingCollection"/> via a dictionary of <see cref="KeyGesture"/>/<see cref="ExecutedRoutedEventHandler"/> pairings.
         /// </summary>
+        /// <param name="commandBindingCollection">The command collection.</param>
         /// <param name="gestureHandlerPairings">The dictionary of key/handler pairings to be used.</param>
         public static void RegisterKeyBindings(this CommandBindingCollection commandBindingCollection, Dictionary<KeyGesture, ExecutedRoutedEventHandler> gestureHandlerPairings)
         {

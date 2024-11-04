@@ -30,12 +30,14 @@ namespace Frosty.Core
         /// Sets the value of the string with the specified ID from the localized string database.
         /// </summary>
         /// <param name="id">The ID of the string to obtain.</param>
+        /// <param name="value">The value to set.</param>
         void SetString(uint id, string value);
 
         /// <summary>
         /// Sets the value of the string with the specified ID from the localized string database.
         /// </summary>
         /// <param name="id">The ID of the string to obtain.</param>
+        /// <param name="value">The value to set.</param>
         void SetString(string id, string value);
 
         /// <summary>

@@ -294,7 +294,7 @@ namespace SoundEditorPlugin
                                 track.WaveForm = target;
                             }
                         }
-                        catch (Exception e)
+                        catch
                         {
                         }
 
@@ -456,7 +456,7 @@ namespace SoundEditorPlugin
                                 track.WaveForm = target;
                             }
                         }
-                        catch (Exception e)
+                        catch
                         {
                         }
 
@@ -650,7 +650,7 @@ namespace SoundEditorPlugin
                                 track.WaveForm = target;
                             }
                         }
-                        catch (Exception e)
+                        catch
                         {
                         }
 

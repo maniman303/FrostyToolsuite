@@ -1781,9 +1781,9 @@ namespace Frosty.Core.Viewport
             param.Value = vecValue;
         }
 
-        /// <summary>
-        /// Sets the specified vector parameter using a Vector4
-        /// </summary>
+        ///// <summary>
+        ///// Sets the specified vector parameter using a Vector4
+        ///// </summary>
         //public void SetVectorParameter(string paramName, Vector4 vecValue)
         //{
         //    dynamic param = VectorParameters.Find((dynamic a) => paramName.Equals(a.ParameterName, StringComparison.OrdinalIgnoreCase));

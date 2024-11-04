@@ -94,7 +94,6 @@ namespace Frosty.Core
         /// Initializes a new instance of the <see cref="Plugin"/> class.
         /// </summary>
         /// <param name="assembly">The assembly to be used.</param>
-        /// <param name="domain">The <see cref="AppDomain"/> that hosts this plugin. This is essential for the ability to </param>
         /// <param name="sourcePath">The path to the plugin's assembly.</param>
         public Plugin(Assembly assembly, string sourcePath)
         {
