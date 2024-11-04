@@ -9,7 +9,6 @@ using Frosty.Controls;
 using System.IO;
 using System.Globalization;
 using FrostySdk;
-using FrostySdk.Interfaces;
 using Microsoft.Win32;
 using FrostySdk.IO;
 using Frosty.ModSupport;
@@ -31,7 +30,6 @@ using System.Linq;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
 using System.Media;
-using System.Collections.ObjectModel;
 
 namespace FrostyModManager
 {
@@ -826,7 +824,7 @@ namespace FrostyModManager
             }
 
             // launch
-            int retCode = 0;
+            int retCode = -6;
             FrostyTaskWindow.Show("Installing mods", "", (logger) =>
             {
                 try
@@ -916,7 +914,11 @@ namespace FrostyModManager
             {
                 FrostyMessageBox.Show("Both Hard Link and Symbolic Link methods are unavailable on your system. Please report this issue.\r\nYou will need to manually remove ModData folder from game directory. Your game files might be damaged.\r\n", "Mods installation failed");
             }
-            else
+            else if (retCode == -3)
+            {
+                FrostyMessageBox.Show("Frosty Mod Manager is missing access to read and write from game directory.\r\n", "Missing access");
+            }
+            else if (retCode != -1)
             {
                 FrostyMessageBox.Show("Mods installation failed due to unknown error.\r\n", "Mods installation failed");
             }

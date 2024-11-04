@@ -100,7 +100,7 @@ namespace Frosty.Core.Viewport
         #endregion
 
         private D3D11.Device device;
-        //private D3D11.DeviceDebug debugDevice;
+        private D3D11.DeviceDebug debugDevice;
 
         // state lists
         private Dictionary<uint, D3D11.SamplerState> samplerStates = new Dictionary<uint, D3D11.SamplerState>();

@@ -1009,11 +1009,49 @@ namespace Frosty.ModSupport
             }
         }
 
+        private bool ValidateWorkingDirAccess(string dir)
+        {
+            try
+            {
+                var filePath = Path.Combine(dir, "test.test");
+
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+
+                var sw = File.CreateText(filePath);
+                sw.WriteLine("test");
+
+                sw.Close();
+
+                var res = File.ReadAllText(filePath);
+
+                if (!res.Contains("test"))
+                {
+                    return false;
+                }
+
+                File.Delete(filePath);
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         private int InstallMods(CancellationToken cancelToken, string rootPath, string modDataPath, string modPackName, params string[] modPaths)
         {
             FileLogger.Init();
 
             FileLogger.Info("Starting mod installation.");
+
+            if (!ValidateWorkingDirAccess(fs.BasePath))
+            {
+                return -3;
+            }
 
             SymLinkHelper.Initialize(fs.BasePath);
 
@@ -1889,11 +1927,6 @@ namespace Frosty.ModSupport
             }
 
             FileLogger.Info("Mod installation finished.");
-
-            if (!OperatingSystemHelper.IsWine())
-            {
-                return 0;
-            }
 
             return 0;
         }

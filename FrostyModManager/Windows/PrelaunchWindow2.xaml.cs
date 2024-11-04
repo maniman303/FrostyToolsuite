@@ -346,6 +346,14 @@ namespace FrostyModManager.Windows
 
         private void ScanForGamesButton_Click(object sender, RoutedEventArgs e)
         {
+            if (OperatingSystemHelper.IsWine())
+            {
+                var message = "If Frosty is run through Flatpak application (Bottles, Lutris, Heroic), then make sure to select 'All user files' in Flatseal for that application.";
+                message += "\r\nOtherwise Frosty Mod Manager might crash.";
+
+                FrostyMessageBox.Show(message, "Frosty Mod Manager");
+            }
+
             using (RegistryKey lmKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\\WOW6432Node"))
             {
                 int totalCount = 0;
