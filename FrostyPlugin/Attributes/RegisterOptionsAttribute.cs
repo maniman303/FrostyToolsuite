@@ -23,6 +23,7 @@ namespace Frosty.Core.Attributes
         /// Initializes a new instance of the <see cref="RegisterOptionsExtensionAttribute"/> class using the options extension type.
         /// </summary>
         /// <param name="optionsType">The type of the option extension. This type must derive from <see cref="OptionsExtension"/></param>
+        /// <param name="managerType">The type of the used plugin manager.</param>
         public RegisterOptionsExtensionAttribute(Type optionsType, PluginManagerType managerType = PluginManagerType.Editor)
         {
             OptionsType = optionsType;

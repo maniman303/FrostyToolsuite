@@ -1,10 +1,4 @@
-﻿using Frosty.Core.Interfaces;
-using FrostySdk;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
 namespace Frosty.Core.Attributes
 {
@@ -15,7 +9,7 @@ namespace Frosty.Core.Attributes
     public class RegisterProfileAttribute : Attribute
     {
         /// <summary>
-        /// Gets the type to use to construct the profile. Must implement the <see cref="IProfile"/> interface
+        /// Gets the type to use to construct the profile. Must implement the IProfile interface
         /// </summary>
         /// <returns>The type to use to construct the profile</returns>
         public Type ProfileType { get; private set; }

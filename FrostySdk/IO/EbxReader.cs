@@ -320,7 +320,7 @@ namespace FrostySdk.IO
             List<Tuple<PropertyInfo, object>> refProps = new List<Tuple<PropertyInfo, object>>();
             List<Tuple<object, Guid>> externalProps = new List<Tuple<object, Guid>>();
             List<object> objsToProcess = new List<object>();
-            int z = 0;
+            //int z = 0;
 
             // count refs for all pointers
             objsToProcess.AddRange(RootObjects);

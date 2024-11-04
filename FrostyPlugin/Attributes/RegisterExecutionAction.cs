@@ -1,5 +1,4 @@
 ﻿using System;
-using Frosty.Core.Mod;
 
 namespace Frosty.Core.Attributes
 {
@@ -15,7 +14,7 @@ namespace Frosty.Core.Attributes
         /// <summary>
         /// Initializes a new instance of the <see cref="RegisterExecutionAction"/> class.
         /// </summary>
-        /// <param name="type">The type of the custom execution action. This type must derive from <see cref="ICustomEditorExecution"/></param>
+        /// <param name="type">The type of the custom execution action. This type must derive from ICustomEditorExecution</param>
         public RegisterExecutionAction(Type type)
         {
             ExecutionActionType = type;

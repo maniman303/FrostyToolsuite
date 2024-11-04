@@ -1,5 +1,4 @@
 ﻿using Frosty.Controls;
-using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace Frosty.Core
@@ -32,7 +31,7 @@ namespace Frosty.Core
         /// <summary>
         /// When implemented in a derived clas, gets the content of the tab item this extension will create.
         /// </summary>
-        /// <returns>A <see cref="FrostyTabItem" that represents the content to display for the tab item./></returns>
+        /// <returns>A <see cref="FrostyTabItem"/> that represents the content to display for the tab item.</returns>
         public virtual FrostyTabItem TabContent { get; }
     }
 }

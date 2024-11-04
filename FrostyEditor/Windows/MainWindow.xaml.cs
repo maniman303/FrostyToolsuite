@@ -425,16 +425,16 @@ namespace FrostyEditor
             try
             {
                 // run mod applying process
-                FrostyTaskWindow.Show("Launching", "", (task) => 
+                FrostyTaskWindow.Show("Launching", "", (logger) => 
                 {
                     try
                     {
                         foreach (ExecutionAction executionAction in App.PluginManager.ExecutionActions)
                         {
-                            executionAction.PreLaunchAction(task.TaskLogger, PluginManagerType.Editor, cancelToken.Token);
+                            executionAction.PreLaunchAction(logger, PluginManagerType.Editor, cancelToken.Token);
                         }
 
-                        task.Update("Exporting Mod");
+                        logger.Log("Exporting Mod");
                         ExportMod(editorSettings, $"Mods/{ProfilesLibrary.ProfileName}/{editorModName}", true, cancelToken.Token);
                         modPaths.Add(editorModName);
                         App.Logger.Log($"Editor Mod Saved As {editorModName}");
@@ -442,7 +442,7 @@ namespace FrostyEditor
                         cancelToken.Token.ThrowIfCancellationRequested();
 
                         // Delete mods.json
-                        task.Update("Deleting mods.json");
+                        logger.Log("Deleting mods.json");
 
                         string gamePatchPath = "Patch";
                         if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa17 || ProfilesLibrary.DataVersion == (int)ProfileVersion.DragonAgeInquisition || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield4 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeed || ProfilesLibrary.DataVersion == (int)ProfileVersion.PlantsVsZombiesGardenWarfare2 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeedRivals)
@@ -460,11 +460,11 @@ namespace FrostyEditor
                             File.Delete(modsJsonPath);
                         }
 
-                        executor.Run(App.FileSystem, cancelToken.Token, task.TaskLogger, $"Mods/{ProfilesLibrary.ProfileName}/", App.SelectedPack, additionalArgs.Trim(), modPaths.ToArray());
+                        executor.Run(App.FileSystem, cancelToken.Token, logger, $"Mods/{ProfilesLibrary.ProfileName}/", App.SelectedPack, additionalArgs.Trim(), modPaths.ToArray());
 
                         foreach (ExecutionAction executionAction in App.PluginManager.ExecutionActions)
                         {
-                            executionAction.PostLaunchAction(task.TaskLogger, PluginManagerType.Editor, cancelToken.Token);
+                            executionAction.PostLaunchAction(logger, PluginManagerType.Editor, cancelToken.Token);
                         }
                     }
                     catch (OperationCanceledException)
@@ -473,7 +473,7 @@ namespace FrostyEditor
 
                         foreach (ExecutionAction executionAction in App.PluginManager.ExecutionActions)
                         {
-                            executionAction.PostLaunchAction(task.TaskLogger, PluginManagerType.ModManager, cancelToken.Token);
+                            executionAction.PostLaunchAction(logger, PluginManagerType.ModManager, cancelToken.Token);
                         }
                     }
 
@@ -607,7 +607,7 @@ namespace FrostyEditor
             RemoveAllTabs();
 
             FrostyProject newProject = null;
-            FrostyTaskWindow.Show("Loading Project", "", (task) =>
+            FrostyTaskWindow.Show("Loading Project", "", (logger) =>
             {
                 if (saveProject)
                 {
@@ -615,7 +615,7 @@ namespace FrostyEditor
                     App.Logger.Log("Project saved to {0}", m_project.Filename);
                 }
 
-                task.Update(filename);
+                logger.Log(filename);
 
                 // clear all modifications
                 App.AssetManager.Reset();
@@ -970,7 +970,7 @@ namespace FrostyEditor
             if (sfd.ShowDialog() == true)
             {
                 IList<AssetEntry> assets = legacyExplorer.SelectedAssets;
-                FrostyTaskWindow.Show("Exporting Legacy Assets", "", (task) =>
+                FrostyTaskWindow.Show("Exporting Legacy Assets", "", (logger) =>
                 {
                     App.AssetManager.SendManagerCommand("legacy", "SetCacheModeEnabled", true);
                     FileInfo fi = new FileInfo(sfd.FileName);
@@ -978,7 +978,7 @@ namespace FrostyEditor
                     int progress = 0;
                     foreach (LegacyFileEntry asset in assets)
                     {
-                        task.Update(asset.Name, (progress / (double)assets.Count) * 100.0);
+                        logger.Log(asset.Name, (progress / (double)assets.Count) * 100.0);
                         progress++;
 
                         string outFileName = fi.Directory.FullName + "\\" + asset.Filename + "." + asset.Type;

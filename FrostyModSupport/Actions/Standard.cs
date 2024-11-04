@@ -1423,7 +1423,7 @@ namespace Frosty.ModSupport
 
                                                 if (chunkEntry.FirstMip != -1)
                                                 {
-                                                    DbObject chunkMeta = null;
+                                                    //DbObject chunkMeta = null;
                                                     foreach (DbObject curMeta in sbBundle.GetValue<DbObject>("chunkMeta"))
                                                     {
                                                         if (curMeta.GetValue<int>("h32") == chunkEntry.H32)

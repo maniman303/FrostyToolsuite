@@ -321,7 +321,13 @@ namespace FrostyModManager
                 int hash = Fnv1.HashString(s);
                 return hash == nameHash;
             }
+
             return base.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
         }
     }
 
@@ -845,7 +851,7 @@ namespace FrostyModManager
                     App.Logger.Log("Launch Cancelled");
                 }
 
-            }, showCancelButton: true, cancelCallback: (task) => cancelToken.Cancel());
+            }, showCancelButton: true, cancelCallback: (logger) => cancelToken.Cancel());
 
             if (retCode == 0)
             {
@@ -975,7 +981,7 @@ namespace FrostyModManager
                     App.Logger.Log("Launch Cancelled");
                 }
 
-            }, showCancelButton: true, cancelCallback: (task) => cancelToken.Cancel());
+            }, showCancelButton: true, cancelCallback: (logger) => cancelToken.Cancel());
 
             if (retCode != -1)
                 WindowState = WindowState.Minimized;
@@ -2138,7 +2144,7 @@ namespace FrostyModManager
 
         private void ZipPack(string filename)
         {
-            FrostyTaskWindow.Show("Exporting Pack", "", (task) =>
+            FrostyTaskWindow.Show("Exporting Pack", "", (logger) =>
             {
                 try
                 {

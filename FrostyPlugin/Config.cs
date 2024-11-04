@@ -185,6 +185,7 @@ namespace Frosty.Core
         /// Determines whether the <see cref="Config"/> contains the specified key.
         /// </summary>
         /// <param name="option">The option key to locate in the <see cref="Config"/>.</param>
+        /// <param name="scope">Scope of the search.</param>
         public bool Contains(string option, ConfigScope scope = ConfigScope.Global)
         {
             if (scope == ConfigScope.Global)
