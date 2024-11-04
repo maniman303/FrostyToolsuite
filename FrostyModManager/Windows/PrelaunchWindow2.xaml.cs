@@ -249,6 +249,14 @@ namespace FrostyModManager.Windows
 
         private void NewConfigButton_Click(object sender, RoutedEventArgs e)
         {
+            if (OperatingSystemHelper.IsWine())
+            {
+                var message = "If Frosty is run through Flatpak application (Bottles, Lutris, Heroic), then make sure to select 'All user files' in Flatseal for that application.";
+                message += "\r\nOtherwise Frosty Mod Manager might crash.";
+
+                FrostyMessageBox.Show(message, "Frosty Mod Manager");
+            }
+
             OpenFileDialog ofd = new OpenFileDialog
             {
                 Filter = "*.exe (Game Executable)|*.exe",
@@ -284,14 +292,7 @@ namespace FrostyModManager.Windows
             Config.AddGame(fi.Name.Remove(fi.Name.Length - 4), fi.DirectoryName);
             configs.Add(new FrostyConfiguration(fi.Name.Remove(fi.Name.Length - 4)));
             Config.Save();
-            //Config ini = new Config();
-            //ini.AddEntry("Init", "GamePath", fi.DirectoryName);
-            //ini.AddEntry("Init", "Profile", fi.Name.Remove(fi.Name.Length - 4));
-            //string filename = "FrostyModManager " + ini.GetEntry("Init", "Profile", "") + ".ini";
-            //ini.SaveEntries(filename);
 
-            //FrostyConfiguration cfg = new FrostyConfiguration(filename);
-            //configs.Add(cfg);
             ConfigList.Items.Refresh();
         }
 
