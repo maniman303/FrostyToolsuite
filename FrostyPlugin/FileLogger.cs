@@ -18,7 +18,7 @@ namespace Frosty.Core
 
             lock(locks)
             {
-                File.WriteAllText(logName, "Logger started.\n");
+                File.WriteAllText(logName, $"[{DateTime.Now}] Logger started\n");
 
                 IsLogInit = true;
             }
