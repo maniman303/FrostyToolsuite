@@ -443,9 +443,9 @@ namespace FrostyModManager
             FrostyTaskWindow.Show("Loading Mods", "", (logger) =>
             {
                 if (!modsDir.Exists)
+                {
                     Directory.CreateDirectory(modsDir.FullName);
-
-                
+                }
 
                 int currentMod = 0;
                 int totalMods = modsDir.EnumerateFiles().Count();
@@ -586,6 +586,16 @@ namespace FrostyModManager
             else if (Config.Get("ApplyModOrder", "List") == "Priority")
             {
                 orderComboBox.SelectedIndex = 1;
+            }
+
+            if (Config.Get("FlatpakMessage", OperatingSystemHelper.IsWine()))
+            {
+                Config.Add("FlatpakMessage", false);
+
+                var message = "If Frosty is run through Flatpak application (Bottles, Lutris, Heroic), then make sure to select 'All user files' in Flatseal for that application.";
+                message += "\r\n\r\nOtherwise Frosty Mod Manager might crash.";
+
+                FrostyMessageBox.Show(message, "Frosty Mod Manager");
             }
 
             GC.Collect();
