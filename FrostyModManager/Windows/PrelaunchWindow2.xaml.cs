@@ -97,7 +97,7 @@ namespace FrostyModManager.Windows
             splashWin.Show();
         }
 
-        private bool ValidateWorkingDirContent()
+        private static bool ValidateWorkingDirContent()
         {
             var dir = Directory.GetCurrentDirectory();
 
@@ -121,13 +121,63 @@ namespace FrostyModManager.Windows
             return true;
         }
 
-        private bool ValidateWorkingDirAccess()
+        private static bool ValidateWorkingDirAccess()
         {
             var dir = Directory.GetCurrentDirectory();
 
             try
             {
                 var filePath = Path.Combine(dir, "test.test");
+
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+
+                var sw = File.CreateText(filePath);
+                sw.WriteLine("test");
+
+                sw.Close();
+
+                var res = File.ReadAllText(filePath);
+
+                if (!res.Contains("test"))
+                {
+                    return false;
+                }
+
+                File.Delete(filePath);
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool ValidateDesktopDirAccess()
+        {
+            if (!OperatingSystemHelper.IsWine())
+            {
+                return true;
+            }
+
+            var dir = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+
+            if (string.IsNullOrWhiteSpace(dir))
+            {
+                return false;
+            }
+
+            if (!Directory.Exists(dir))
+            {
+                return false;
+            }
+
+            try
+            {
+                var filePath = Path.Combine(dir, "frosty.test");
 
                 if (File.Exists(filePath))
                 {
@@ -164,8 +214,8 @@ namespace FrostyModManager.Windows
 
                 if (OperatingSystemHelper.IsWine())
                 {
-                    message += "\r\nOn Linux make sure Frosty Mod Manager is run from a directory accessible via a Wine drive.\r\n";
-                    message += "If Wine is run from a Flatpak application, make sure that application has access to the Frosty Mod Manager location (can be set up with Flatseal).";
+                    message += "\r\nOn Linux make sure Frosty Mod Manager is run from a directory accessible via a Wine drive.";
+                    message += "\r\nIf Wine is run from a Flatpak application, make sure that application has access to the Frosty Mod Manager location (can be set up with Flatseal).";
                 }
 
                 FrostyMessageBox.Show(message, "Frosty Mod Manager");
@@ -179,9 +229,22 @@ namespace FrostyModManager.Windows
 
                 if (OperatingSystemHelper.IsWine())
                 {
-                    message += "\r\nOn Linux make sure Frosty Mod Manager is run from a directory accessible via a Wine drive that is not Z.\r\n";
-                    message += "If Wine is run from a Flatpak application, make sure that application has read and write access to the Frosty Mod Manager location (can be set up with Flatseal).";
+                    message += "\r\nOn Linux make sure Frosty Mod Manager is run from a directory accessible via a Wine drive that is not Z.";
+                    message += "\r\nIf Wine is run from a Flatpak application, make sure that application has read and write access to the Frosty Mod Manager location (can be set up with Flatseal).";
                 }
+
+                FrostyMessageBox.Show(message, "Frosty Mod Manager");
+                Close();
+                return;
+            }
+
+            if (!ValidateDesktopDirAccess())
+            {
+                var message = "Desktop direcotry cannot be accessed.\r\n";
+
+                message += "\r\nOn Linux make sure application running Wine (like Bottles, Lutris) has access to /home/{user}/Desktop directory.";
+                message += "\r\nYou can use Flatseal to add this access to Flatpak applications.";
+                message += "\r\nIt is recommended to select 'All user files' for maximum compatibility.";
 
                 FrostyMessageBox.Show(message, "Frosty Mod Manager");
                 Close();
