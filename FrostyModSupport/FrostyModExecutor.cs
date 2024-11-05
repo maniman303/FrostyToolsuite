@@ -1955,8 +1955,10 @@ namespace Frosty.ModSupport
             {
                 throw oce;
             }
-            catch
+            catch (Exception e)
             {
+                FileLogger.Info($"Caught exception during mod installation. Details: {e}");
+                FrostyMessageBox.Show($"Mod installation encountered exception of type {e.GetType()}. Check 'executor.log' file in Frosty directory for more details.\r\n", "Mod installation failed");
                 return -1;
             }
 
@@ -1984,7 +1986,21 @@ namespace Frosty.ModSupport
 
             string modDataPath = fs.BasePath + modDirName + "\\";
 
-            int installRes = InstallMods(cancelToken, rootPath, modDataPath, modPackName, modPaths);
+            int installRes;
+            try
+            {
+                installRes = InstallMods(cancelToken, rootPath, modDataPath, modPackName, modPaths);
+            }
+            catch (OperationCanceledException oce)
+            {
+                throw oce;
+            }
+            catch (Exception e)
+            {
+                FileLogger.Info($"Caught exception during mod installation. Details: {e}");
+                FrostyMessageBox.Show($"Mod installation encountered exception of type {e.GetType()}. Check 'executor.log' file in Frosty directory for more details.\r\n", "Mod installation failed");
+                return -1;
+            }
 
             if (installRes != 0)
             {
