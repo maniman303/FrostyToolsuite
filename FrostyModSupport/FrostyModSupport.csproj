@@ -133,9 +133,6 @@
     <Content Include="ThirdParty\libzstd.1.3.4.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="ThirdParty\version.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="ThirdParty\winmm.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

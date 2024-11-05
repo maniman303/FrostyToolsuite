@@ -1103,6 +1103,10 @@ namespace Frosty.ModSupport
             {
                 needsModding = true;
             }
+            else if (OperatingSystemHelper.IsWine() && !File.Exists(Path.Combine(fs.BasePath, "winmm.dll")))
+            {
+                needsModding = true;
+            }
             else
             {
                 var modSetupJson = File.ReadAllText(Path.Combine(modDataPath, patchPath, "mods.json"));
@@ -1890,8 +1894,8 @@ namespace Frosty.ModSupport
 
             cancelToken.ThrowIfCancellationRequested();
 
-            // DAI and NFS dont require bcrypt
-            if (ProfilesLibrary.DataVersion != (int)ProfileVersion.DragonAgeInquisition && ProfilesLibrary.DataVersion != (int)ProfileVersion.Battlefield4 && ProfilesLibrary.DataVersion != (int)ProfileVersion.NeedForSpeed && ProfilesLibrary.DataVersion != (int)ProfileVersion.NeedForSpeedRivals)
+            // NFS dont require bcrypt
+            if (ProfilesLibrary.DataVersion != (int)ProfileVersion.Battlefield4 && ProfilesLibrary.DataVersion != (int)ProfileVersion.NeedForSpeed && ProfilesLibrary.DataVersion != (int)ProfileVersion.NeedForSpeedRivals)
             {
                 // delete old useless bcrypt
                 if (File.Exists(fs.BasePath + "bcrypt.dll"))
@@ -1901,7 +1905,6 @@ namespace Frosty.ModSupport
 
                 if (OperatingSystemHelper.IsWine())
                 {
-                    CopyFileIfRequired("ThirdParty/version.dll", fs.BasePath + "version.dll");
                     CopyFileIfRequired("ThirdParty/winmm.dll", fs.BasePath + "winmm.dll");
                     CopyFileIfRequired("ThirdParty/crypthook.dll", fs.BasePath + "crypthook.dll");
                 }
