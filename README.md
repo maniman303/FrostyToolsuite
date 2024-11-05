@@ -7,7 +7,7 @@ Uses [VersionProxy](https://github.com/maniman303/frosty-version-proxy), [CryptH
 
 - Fixed symbolic linking of files in mod deployment.
 - Added hard linking option for mod deployment (on by default).
-- Reworked actions tab and fixed performance.
+- Reworked actions tab and fixed it's performance.
 - Fixed drag and drop on Linux.
 - Fixed game icons on Linux.
 - Added `Install mods` button.
@@ -16,16 +16,21 @@ Uses [VersionProxy](https://github.com/maniman303/frosty-version-proxy), [CryptH
 - Fixed minimize, maximize, close buttons on Linux.
 - Disabled auto update.
 - Updated project to .NET framework 4.8.1.
+- Added exceptions logging for mod installation.
+- Added basic Wine installation validation.
 
 ## Linux and Steam guide
 
 - Install Bottles from Flatpak.
-- Make sure Bottles have access to game directory (you can add it with Flatseal).
-- Create a new application bottle, use latest soda or wine-ge runner (proton-ge is not suggested).
-- If you are NOT using Proton make sure to install wine mono in bottle dependencies.
+- Make sure Bottles have access to ALL USER FILES (you can add it with Flatseal, without it Frosty or even wine explorer can crash).
+- Create a new application bottle, use latest soda or wine kron4ek (not tkg) runner (proton-ge is not suggested).
+- If you are NOT using Proton make sure to install wine mono in bottle dependencies (usually auto installed).
+- Add Frosty Mod Manager directory as a new drive in bottle settings.
+- Add game directory as another new drive in bottle settings.
+- Run Explorer from Legacy Wine tools from your bottle to verify that drives are accessible.
 - Add FrostyModManager to shortcuts in the bottle, launch it.
 - Add game exe manually. Scanning for games won't work unless you export registry entries from Proton prefix.
-- Add mods with `Add mod` button, install mods with `Install mods` button.
+- Add mods with Add mods  button, install mods with Install mods button.
 - After mods installation take note of launch options provided by manager, add these options to the Steam game under game properties.
 
 ## Differences between hard and soft links
