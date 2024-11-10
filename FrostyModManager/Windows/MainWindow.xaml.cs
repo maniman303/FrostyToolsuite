@@ -419,7 +419,10 @@ namespace FrostyModManager
             fs = new FileSystem(gamePath);
 
             foreach (FileSystemSource source in ProfilesLibrary.Sources)
+            {
                 fs.AddSource(source.Path, source.SubDirs);
+            }
+
             fs.Initialize();
 
             Config.Save();
