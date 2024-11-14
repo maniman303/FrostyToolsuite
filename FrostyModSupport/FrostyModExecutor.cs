@@ -1063,6 +1063,8 @@ namespace Frosty.ModSupport
                 return -2;
             }
 
+            FileLogger.Info($"Is using hard links: {ShouldUseHardLink()}");
+
             string patchPath = "Patch";
             if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa17 || ProfilesLibrary.DataVersion == (int)ProfileVersion.DragonAgeInquisition || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield4 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeed || ProfilesLibrary.DataVersion == (int)ProfileVersion.PlantsVsZombiesGardenWarfare2 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeedRivals)
                 patchPath = "Update\\Patch\\Data";
@@ -1097,6 +1099,7 @@ namespace Frosty.ModSupport
 
             cancelToken.ThrowIfCancellationRequested();
             Logger.Log("Setup verification");
+            FileLogger.Info("Setup verification");
 
             bool needsModding = false;
             if (!File.Exists(Path.Combine(modDataPath, patchPath, "mods.json")))
@@ -1109,6 +1112,8 @@ namespace Frosty.ModSupport
             }
             else
             {
+                FileLogger.Info("Reading mods.json");
+
                 var modSetupJson = File.ReadAllText(Path.Combine(modDataPath, patchPath, "mods.json"));
                 var modSetup = new ModSetup();
 
@@ -1138,6 +1143,8 @@ namespace Frosty.ModSupport
                 }
             }
 
+            FileLogger.Info($"Needs modding: {needsModding}");
+
             cancelToken.ThrowIfCancellationRequested();
             if (needsModding)
             {
@@ -1145,12 +1152,13 @@ namespace Frosty.ModSupport
 
                 if (!Directory.Exists(modDataPath))
                 {
+                    FileLogger.Info("Reseting ModData is not needed");
                     newInstallation = true;
                 }
                 else if (ShouldCleanModDir(modDataPath))
                 {
                     Logger.Log("Reseting ModData, it can take a few minutes");
-                    FileLogger.Info("Reseting ModData.");
+                    FileLogger.Info($"Reseting ModData at '{modDataPath}'.");
                     SymLinkHelper.DeleteDirectorySafe(modDataPath);
                     FileLogger.Info("Reseting ModData finished.");
                 }
@@ -1160,6 +1168,7 @@ namespace Frosty.ModSupport
 
                 if (ProfilesLibrary.DataVersion == (int)ProfileVersion.StarWarsBattlefrontII || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5)
                 {
+                    FileLogger.Info("Loading catalogs for SWBF2 or BF5");
                     foreach (string catalogName in fs.Catalogs)
                     {
                         Dictionary<int, Dictionary<uint, CatResourceEntry>> entries = LoadCatalog("native_data/" + catalogName + "/cas.cat", out int hash);
@@ -1171,6 +1180,8 @@ namespace Frosty.ModSupport
                             resources.Add(hash, entries);
                     }
                 }
+
+                FileLogger.Info("Loading cache");
 
                 rm = new ResourceManager(fs);
                 rm.SetLogger(logger);
@@ -1184,8 +1195,9 @@ namespace Frosty.ModSupport
                 am.Initialize(additionalStartup: false);
 
                 cancelToken.ThrowIfCancellationRequested();
-                Logger.Log("Loading Mods");
-                App.Logger.Log("Loading Mods");
+                Logger.Log("Loading mods");
+                App.Logger.Log("Loading mods");
+                FileLogger.Info("Loading mods");
 
                 // Get Full Modlist
                 List<FrostyMod> modList = new List<FrostyMod>();
@@ -1203,6 +1215,8 @@ namespace Frosty.ModSupport
                     }
                 }
 
+                FileLogger.Info("Loading mod resources");
+
                 // Load Mod Resources
                 int currentMod = 0;
                 foreach (FrostyMod mod in modList)
@@ -1219,8 +1233,9 @@ namespace Frosty.ModSupport
                     ReportProgress(currentMod++, modList.Count);
                 }
 
-                Logger.Log("Applying Handlers");
-                App.Logger.Log("Applying Handlers");
+                Logger.Log("Applying handlers");
+                App.Logger.Log("Applying handlers");
+                FileLogger.Info("Applying handlers");
 
                 // apply handlers
                 RuntimeResources runtimeResources = new RuntimeResources();
@@ -1259,15 +1274,29 @@ namespace Frosty.ModSupport
                     if (!Directory.Exists(modDataPath))
                     {
                         Logger.Log("Creating ModData");
+                        FileLogger.Info("Creating ModData");
 
                         // create mod path
                         Directory.CreateDirectory(modDataPath);
 
                         if (ProfilesLibrary.DataVersion == (int)ProfileVersion.StarWarsBattlefrontII)
                         {
-                            if (!Directory.Exists(modDataPath + "Data"))
-                                Directory.CreateDirectory(modDataPath + "Data");
-                            cmdArgs.Add(new SymLinkStruct(modDataPath + "Data/Win32", fs.BasePath + "Data/Win32", true));
+                            var modDataPathBf2Extra = modDataPath + "Data";
+
+                            FileLogger.Info($"Validating SWBF2 mod data path '{modDataPathBf2Extra}'");
+
+                            if (!Directory.Exists(modDataPathBf2Extra))
+                            {
+                                FileLogger.Info($"Creating SWBF2 mod data path '{modDataPathBf2Extra}'");
+                                Directory.CreateDirectory(modDataPathBf2Extra);
+                            }
+
+                            var modDataPathBf2Win = modDataPath + "Data/Win32";
+                            var fsBasePathBf2Win = fs.BasePath + "Data/Win32";
+
+                            FileLogger.Info($"Adding SWBF2 win mod data path '{modDataPathBf2Win}' and win fs base path '{fsBasePathBf2Win}'");
+
+                            cmdArgs.Add(new SymLinkStruct(modDataPathBf2Win, fsBasePathBf2Win, true));
                         }
                         if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5) //bfv doesnt have a patch directory so we need to rebuild the data folder structure instead
                         {
@@ -1378,8 +1407,9 @@ namespace Frosty.ModSupport
                     if (newInstallation)
                         reason = "New installation detected.";
 
-                    Logger.Log("Creating symlinks");
-                    App.Logger.Log("Creating symlinks");
+                    Logger.Log("Creating links");
+                    App.Logger.Log("Creating links");
+                    FileLogger.Info("Creating links");
 
                     if (!OperatingSystemHelper.IsWine() && !ShouldUseHardLink())
                     {
@@ -1398,14 +1428,17 @@ namespace Frosty.ModSupport
                     }
                 }
 
+                FileLogger.Info("Update threadpool");
+
                 // set max threads to processor amount (stop hitching)
                 ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
                 ThreadPool.SetMaxThreads(Environment.ProcessorCount, completionPortThreads);
 
                 // modify tocs and sbs
                 cancelToken.ThrowIfCancellationRequested();
-                Logger.Log("Applying Mods");
-                App.Logger.Log("Applying Mods");
+                Logger.Log("Applying mods");
+                App.Logger.Log("Applying mods");
+                FileLogger.Info("Applying mods");
 
                 cmdArgs.Clear();
 
@@ -1552,6 +1585,8 @@ namespace Frosty.ModSupport
                 }
                 else if (ProfilesLibrary.DataVersion == (int)ProfileVersion.StarWarsBattlefrontII || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5)
                 {
+                    FileLogger.Info("Adding manifests for SWBF2 bundles");
+
                     ConcurrentBag<ManifestBundleAction> actions = new ConcurrentBag<ManifestBundleAction>();
 
                     if (addedBundles.Count != 0)
@@ -1597,6 +1632,8 @@ namespace Frosty.ModSupport
                         {
                             // if any of the threads caused an exception, throw it to the global handler
                             // as the game data is now in an inconsistent state
+                            FileLogger.Info("Adding manifests for SWBF2 in parallel resultet in an exception");
+
                             throw action.Exception;
                         }
 
@@ -1607,6 +1644,8 @@ namespace Frosty.ModSupport
                                 casData.Add(fs.GetCatalog(action.FileInfos[i].FileInfo.file), action.DataRefs[i], action.FileInfos[i].Entry, action.FileInfos[i].FileInfo);
                         }
                     }
+
+                    FileLogger.Info("Processing manifest chunk changes for SWBF2");
 
                     // now process manifest chunk changes
                     if (modifiedBundles.ContainsKey(chunksBundleHash))
@@ -1726,8 +1765,9 @@ namespace Frosty.ModSupport
                 // reset threadpool
                 ThreadPool.SetMaxThreads(workerThreads, completionPortThreads);
 
-                Logger.Log("Writing Archive Data");
-                App.Logger.Log("Writing Archive Data");
+                Logger.Log("Writing archive data");
+                App.Logger.Log("Writing archive data");
+                FileLogger.Info("Writing archive data");
 
                 int totalEntries = casData.GetEntryCount();
                 int currentEntry = 0;
@@ -1774,8 +1814,9 @@ namespace Frosty.ModSupport
 
                 cancelToken.ThrowIfCancellationRequested();
 
-                Logger.Log("Writing Manifest");
-                App.Logger.Log("Writing Manifest");
+                Logger.Log("Writing manifest");
+                App.Logger.Log("Writing manifest");
+                FileLogger.Info("Writing manifest");
 
                 // finally copy in the left over patch data
                 CopyFileIfRequired(fs.BasePath + patchPath + "/initfs_win32", modDataPath + patchPath + "/initfs_win32");
@@ -1885,11 +1926,13 @@ namespace Frosty.ModSupport
 
                 // stopwatch
                 watch.Stop();
-                App.Logger.Log($"Applied Mods in {watch.Elapsed.Minutes}m {watch.Elapsed.Seconds}s");
+                App.Logger.Log($"Applied mods in {watch.Elapsed.Minutes}m {watch.Elapsed.Seconds}s");
+                FileLogger.Info("Applied mods");
             }
             else
             {
                 App.Logger.Log("Launching with previously generated data.");
+                FileLogger.Info("Leaving previously generated data");
             }
 
             cancelToken.ThrowIfCancellationRequested();
@@ -2309,10 +2352,13 @@ namespace Frosty.ModSupport
 
         private bool DeleteSelectFiles(string modPath)
         {
+            FileLogger.Info($"Start selected files deletion at '{modPath}'");
+
             DirectoryInfo di = new DirectoryInfo(modPath);
 
             if (!di.Exists)
             {
+                FileLogger.Info("Canceled selected files deletion as path does not exists");
                 return false;
             }
 
@@ -2344,6 +2390,8 @@ namespace Frosty.ModSupport
                     }
                 }
             }
+
+            FileLogger.Info("Finished selected files deletion");
 
             return true;
         }
@@ -2672,7 +2720,7 @@ namespace Frosty.ModSupport
             if (baseFi.Exists)
             {
                 // copy file if it doesn't exist, or recently modified
-                if (!modFi.Exists || (modFi.Exists && baseFi.LastWriteTimeUtc > modFi.LastWriteTimeUtc || baseFi.Length != modFi.Length))
+                if (!modFi.Exists || (modFi.Exists && (baseFi.LastWriteTimeUtc > modFi.LastWriteTimeUtc || baseFi.Length != modFi.Length)))
                 {
                     File.Copy(baseFi.FullName, modFi.FullName, true);
                 }

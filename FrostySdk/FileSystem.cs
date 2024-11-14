@@ -669,8 +669,17 @@ namespace FrostySdk
 
                 if (string.IsNullOrEmpty(manifestPath))
                 {
+                    SdkFileLogger.Info($"Could not resolve manifest path for '{file}'.");
                     throw new ArgumentException($"Could not resolve manifest path for '{file}'.");
                 }
+
+                if (!File.Exists(manifestPath))
+                {
+                    SdkFileLogger.Info($"Could not find manifest under path '{manifestPath}' for file '{file}'.");
+                    throw new ArgumentException($"Could not find manifest under path '{manifestPath}' for file '{file}'.");
+                }
+
+                SdkFileLogger.Info($"Attempting to read manifest from path '{manifestPath}'");
 
                 using (NativeReader reader = new NativeReader(new FileStream(manifestPath, FileMode.Open, FileAccess.Read)))
                 {
