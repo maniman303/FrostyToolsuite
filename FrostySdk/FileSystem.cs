@@ -22,6 +22,8 @@ namespace FrostySdk
             value = ((inIndex + 1) << 12) | (inPatch ? 0x100 : 0x00) | ((inCasIndex - 1) & 0xFF);
         }
 
+        public int Value => value;
+
         public static implicit operator ManifestFileRef(int inValue) => new ManifestFileRef { value = inValue };
         public static implicit operator int(ManifestFileRef inRef)   => inRef.value;
     }
@@ -172,7 +174,7 @@ namespace FrostySdk
                 }
             }
 
-            SdkFileLogger.Info($"Could not find matching path for'{BasePath}' and '{filename}'.");
+            SdkFileLogger.Info($"Could not find matching path for '{BasePath}' and '{filename}'.");
 
             return string.Empty;
         }
@@ -331,10 +333,55 @@ namespace FrostySdk
             }
         }
 
+        private string FormatByte(byte b)
+        {
+            if (b >= 100)
+            {
+                return $"{b}";
+            }
+
+            if (b >= 10)
+            {
+                return $"0{b}";
+            }
+
+            return $"00{b}";
+        }
+
+        private void LogLayoutToc(string path)
+        {
+            var logName = "layout.toc.log";
+            File.WriteAllText(logName, "layout.toc\n");
+
+            var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
+            var buffer = new byte[16];
+            var readBytes = 0;
+
+            do
+            {
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    buffer[i] = 0;
+                }
+
+                readBytes = stream.Read(buffer, 0, buffer.Length);
+                using (var fileStream = File.AppendText(logName))
+                {
+                    fileStream.Write($"{FormatByte(buffer[0])} {FormatByte(buffer[1])} {FormatByte(buffer[2])} {FormatByte(buffer[3])} {FormatByte(buffer[4])} {FormatByte(buffer[5])} {FormatByte(buffer[6])} {FormatByte(buffer[7])} ");
+                    fileStream.Write($"{FormatByte(buffer[8])} {FormatByte(buffer[9])} {FormatByte(buffer[10])} {FormatByte(buffer[11])} {FormatByte(buffer[12])} {FormatByte(buffer[13])} {FormatByte(buffer[14])} {FormatByte(buffer[15])}\n");
+                }
+            } while (readBytes == 16);
+        }
+
         private void ProcessLayouts()
         {
             string baseLayoutPath = ResolvePath("native_data/layout.toc");
             string patchLayoutPath = ResolvePath("native_patch/layout.toc");
+
+            SdkFileLogger.Info($"Base layout path '{baseLayoutPath}'");
+            SdkFileLogger.Info($"Patch layout path '{patchLayoutPath}'");
+
+            //LogLayoutToc(baseLayoutPath);
 
             // Process base layout.toc
             DbObject baseLayout = null;
@@ -344,7 +391,7 @@ namespace FrostySdk
             foreach (DbObject superBundle in baseLayout.GetValue<DbObject>("superBundles"))
                 superBundles.Add(superBundle.GetValue<string>("name").ToLower());
 
-            if (patchLayoutPath != "")
+            if (!string.IsNullOrWhiteSpace(patchLayoutPath))
             {
                 // Process patch layout.toc
                 DbObject patchLayout = null;
@@ -665,11 +712,15 @@ namespace FrostySdk
                 ManifestFileRef file = manifest.GetValue<int>("file");
                 CatalogInfo catalog = catalogs[file.CatalogIndex];
 
+                string manifestFilePath = (file.IsInPatch ? "native_patch/" : "native_data/") + catalogs[file.CatalogIndex].Name + "/cas_" + file.CasIndex.ToString("D2") + ".cas";
+
+                SdkFileLogger.Info($"File value: {file.Value}, cas index: {file.CasIndex}");
+
                 string manifestPath = ResolvePath(file);
 
                 if (string.IsNullOrEmpty(manifestPath))
                 {
-                    SdkFileLogger.Info($"Could not resolve manifest path for '{file}'.");
+                    SdkFileLogger.Info($"Could not resolve manifest path for '{file}' and path '{manifestFilePath}'.");
                     throw new ArgumentException($"Could not resolve manifest path for '{file}'.");
                 }
 
@@ -686,11 +737,15 @@ namespace FrostySdk
                     long manifestOffset = manifest.GetValue<int>("offset");
                     long manifestSize = manifest.GetValue<int>("size");
 
+                    SdkFileLogger.Info($"Manifest offset: {manifestOffset}, manifest size: {manifestSize}");
+
                     reader.Position = manifestOffset;
 
                     uint fileCount = reader.ReadUInt();
                     uint bundleCount = reader.ReadUInt();
                     uint chunksCount = reader.ReadUInt();
+
+                    SdkFileLogger.Info($"Reading manifest files, count: {fileCount}");
 
                     // files
                     for (uint i = 0; i < fileCount; i++)
@@ -704,6 +759,8 @@ namespace FrostySdk
                         };
                         manifestFiles.Add(fi);
                     }
+
+                    SdkFileLogger.Info($"Reading manifest bundles, count: {bundleCount}");
 
                     // bundles
                     for (uint i = 0; i < bundleCount; i++)
@@ -722,6 +779,8 @@ namespace FrostySdk
                         manifestBundles.Add(bi);
                     }
 
+                    SdkFileLogger.Info($"Reading manifest chunks, count: {chunksCount}");
+
                     // chunks
                     for (uint i = 0; i < chunksCount; i++)
                     {
@@ -735,6 +794,8 @@ namespace FrostySdk
                         manifestChunks.Add(ci);
                     }
                 }
+
+                SdkFileLogger.Info("Finished reading manifest");
             }
         }
     }

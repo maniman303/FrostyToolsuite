@@ -1298,7 +1298,7 @@ namespace Frosty.ModSupport
 
                             cmdArgs.Add(new SymLinkStruct(modDataPathBf2Win, fsBasePathBf2Win, true));
                         }
-                        if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5) //bfv doesnt have a patch directory so we need to rebuild the data folder structure instead
+                        else if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5) //bfv doesnt have a patch directory so we need to rebuild the data folder structure instead
                         {
                             if (!Directory.Exists(modDataPath + "Data"))
                                 Directory.CreateDirectory(modDataPath + "Data");
@@ -1823,6 +1823,7 @@ namespace Frosty.ModSupport
 
                 if (ProfilesLibrary.DataVersion == (int)ProfileVersion.DragonAgeInquisition || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield4 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeed || ProfilesLibrary.DataVersion == (int)ProfileVersion.PlantsVsZombiesGardenWarfare2 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeedRivals)
                 {
+                    FileLogger.Info($"Modify layout.toc at '{fs.BasePath + patchPath + "/layout.toc"}'");
                     // modify layout.toc for any new superbundles added
                     DbObject layout = null;
                     using (DbReader reader = new DbReader(new FileStream(fs.BasePath + patchPath + "/layout.toc", FileMode.Open, FileAccess.Read), fs.CreateDeobfuscator()))
@@ -1848,8 +1849,11 @@ namespace Frosty.ModSupport
                 else if (ProfilesLibrary.DataVersion != (int)ProfileVersion.Fifa19 && ProfilesLibrary.DataVersion != (int)ProfileVersion.Madden20 && ProfilesLibrary.DataVersion != (int)ProfileVersion.Fifa20)
                 {
                     DbObject layout = null;
-                    using (DbReader reader = new DbReader(new FileStream(fs.ResolvePath("layout.toc"), FileMode.Open, FileAccess.Read), fs.CreateDeobfuscator()))
+                    var layoutPath = fs.ResolvePath("layout.toc");
+                    using (DbReader reader = new DbReader(new FileStream(layoutPath, FileMode.Open, FileAccess.Read), fs.CreateDeobfuscator()))
                         layout = reader.ReadDbObject();
+
+                    FileLogger.Info($"Modify layout.toc at '{layoutPath}'");
 
                     // write out new manifest
                     if (ProfilesLibrary.DataVersion == (int)ProfileVersion.StarWarsBattlefrontII || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5)
@@ -1862,8 +1866,10 @@ namespace Frosty.ModSupport
 
                         // find the next available cas
                         int casIndex = 1;
-                        while (File.Exists(modDataPath + patchPath + "/" + (string.Format("{0}\\cas_{1}.cas", catalog, casIndex.ToString("D2")))))
+                        while (File.Exists(modDataPath + patchPath + "/" + string.Format("{0}\\cas_{1}.cas", catalog, casIndex.ToString("D2"))))
+                        {
                             casIndex++;
+                        }
 
                         Sha1 sha1 = Utils.GenerateSha1(tmpBuf);
 
@@ -1896,6 +1902,8 @@ namespace Frosty.ModSupport
                     string layoutLocation = modDataPath + patchPath + "/layout.toc";
                     if (ProfilesLibrary.DataVersion == (int)ProfileVersion.StarWarsBattlefrontII || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5)
                         layoutLocation = modDataPath + "Data/layout.toc";
+
+                    FileLogger.Info($"Write layout.toc at '{layoutLocation}'");
 
                     using (DbWriter writer = new DbWriter(new FileStream(layoutLocation, FileMode.Create), true))
                         writer.Write(layout);

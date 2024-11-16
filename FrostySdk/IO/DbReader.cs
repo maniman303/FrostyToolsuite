@@ -83,7 +83,15 @@ namespace FrostySdk.IO
 
                 case DbType.Boolean: return ReadByte() == 1;
                 case DbType.String: return ReadSizedString(Read7BitEncodedInt());
-                case DbType.Int: return ReadInt();
+                case DbType.Int:
+                    var res = ReadInt();
+
+                    if (objName == "file" || objName == "offset")
+                    {
+                        SdkFileLogger.Info($"Name: {objName}, position: {Position}, length: {Length}, whole value: {res}, buffers: {buffer[0]} {buffer[1]} {buffer[2]} {buffer[3]}");
+                    }
+
+                    return res;
                 case DbType.Long: return ReadLong();
                 case DbType.Float: return ReadFloat();
                 case DbType.Double: return ReadDouble();
