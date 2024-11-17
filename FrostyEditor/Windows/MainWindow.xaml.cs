@@ -431,7 +431,7 @@ namespace FrostyEditor
                     {
                         foreach (ExecutionAction executionAction in App.PluginManager.ExecutionActions)
                         {
-                            executionAction.PreLaunchAction(logger, PluginManagerType.Editor, cancelToken.Token);
+                            executionAction.PreLaunchAction(logger, PluginManagerType.Editor, false, cancelToken.Token);
                         }
 
                         logger.Log("Exporting Mod");
@@ -464,7 +464,7 @@ namespace FrostyEditor
 
                         foreach (ExecutionAction executionAction in App.PluginManager.ExecutionActions)
                         {
-                            executionAction.PostLaunchAction(logger, PluginManagerType.Editor, cancelToken.Token);
+                            executionAction.PostLaunchAction(logger, PluginManagerType.Editor, false, cancelToken.Token);
                         }
                     }
                     catch (OperationCanceledException)
@@ -473,7 +473,7 @@ namespace FrostyEditor
 
                         foreach (ExecutionAction executionAction in App.PluginManager.ExecutionActions)
                         {
-                            executionAction.PostLaunchAction(logger, PluginManagerType.ModManager, cancelToken.Token);
+                            executionAction.PostLaunchAction(logger, PluginManagerType.ModManager, false, cancelToken.Token);
                         }
                     }
 

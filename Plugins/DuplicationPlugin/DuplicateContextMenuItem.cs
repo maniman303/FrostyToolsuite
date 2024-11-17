@@ -664,7 +664,7 @@ namespace DuplicationPlugin
                         logger.Log("Duplicating asset...");
                         extensions[key].DuplicateAsset(entry, newName, newType != null, newType);
                     }
-                    catch (Exception e)
+                    catch
                     {
                         App.Logger.Log($"Failed to duplicate {entry.Name}");
                     }

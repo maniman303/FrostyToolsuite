@@ -81,10 +81,10 @@ namespace LaunchPlatformPlugin.Actions
         private Platform m_selectedPlatform;
         private bool m_shouldRelaunchPlatform = false;
 
-        public override Action<ILogger, PluginManagerType, CancellationToken> PreLaunchAction => new Action<ILogger, PluginManagerType, CancellationToken>((ILogger logger, PluginManagerType type, CancellationToken cancelToken) =>
+        public override Action<ILogger, PluginManagerType, bool, CancellationToken> PreLaunchAction => new Action<ILogger, PluginManagerType, bool, CancellationToken>((ILogger logger, PluginManagerType type, bool isInstallOnly, CancellationToken cancelToken) =>
         {
             // only run platform launch system when PlatformLaunchingEnabled is true
-            if (Config.Get("PlatformLaunchingEnabled", false, ConfigScope.Game))
+            if (Config.Get("PlatformLaunchingEnabled", false, ConfigScope.Game) && !isInstallOnly)
             {
                 var platform = (LaunchPlatform)Enum.Parse(typeof(LaunchPlatform), Config.Get("Platform", "Origin", ConfigScope.Game));
                 m_selectedPlatform = m_platforms[platform];
@@ -125,10 +125,10 @@ namespace LaunchPlatformPlugin.Actions
             }
         });
 
-        public override Action<ILogger, PluginManagerType, CancellationToken> PostLaunchAction => new Action<ILogger, PluginManagerType, CancellationToken>((ILogger logger, PluginManagerType type, CancellationToken cancelToken) =>
+        public override Action<ILogger, PluginManagerType, bool, CancellationToken> PostLaunchAction => new Action<ILogger, PluginManagerType, bool, CancellationToken>((ILogger logger, PluginManagerType type, bool isInstallOnly, CancellationToken cancelToken) =>
         {
             // only run platform launch system when PlatformLaunchingEnabled is true
-            if (Config.Get("PlatformLaunchingEnabled", false, ConfigScope.Game))
+            if (Config.Get("PlatformLaunchingEnabled", false, ConfigScope.Game) && !isInstallOnly)
             {
                 var platform = (LaunchPlatform)Enum.Parse(typeof(LaunchPlatform), Config.Get("Platform", "Origin", ConfigScope.Game));
 

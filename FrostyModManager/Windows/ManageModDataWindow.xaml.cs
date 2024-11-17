@@ -146,7 +146,7 @@ namespace FrostyModManager
                     try
                     {
                         foreach (var executionAction in App.PluginManager.ExecutionActions)
-                            executionAction.PreLaunchAction(logger, PluginManagerType.ModManager, cancelToken.Token);
+                            executionAction.PreLaunchAction(logger, PluginManagerType.ModManager, false, cancelToken.Token);
 
                         FrostyModExecutor.LaunchGame(Config.Get<string>("GamePath", "", ConfigScope.Game, ProfilesLibrary.ProfileName) + "\\", modDirName, modDataPath, Config.Get<string>("CommandLineArgs", "", ConfigScope.Game));
 
