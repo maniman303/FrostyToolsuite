@@ -1,6 +1,5 @@
 ﻿using FrostyModManager;
 using FrostySdk.Converters;
-using FrostySdk.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

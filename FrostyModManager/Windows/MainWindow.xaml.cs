@@ -843,20 +843,35 @@ namespace FrostyModManager
                 try
                 {
                     foreach (var executionAction in App.PluginManager.ExecutionActions)
-                        executionAction.PreLaunchAction(logger, PluginManagerType.ModManager, true, cancelToken.Token);
+                    {
+                        try
+                        {
+                            executionAction.PreLaunchAction(logger, PluginManagerType.ModManager, true, cancelToken.Token);
+                        }
+                        catch (Exception ex)
+                        {
+                            FileLogger.Info($"Exception on pre-launch action '{executionAction.GetType()}'.");
+
+                            throw ex;
+                        }
+                    }
 
                     FrostyModExecutor modExecutor = new FrostyModExecutor();
                     retCode = modExecutor.Install(fs, cancelToken.Token, logger, modsDir.FullName, App.SelectedPack, modPaths.ToArray());
 
                     foreach (var executionAction in App.PluginManager.ExecutionActions)
+                    {
                         executionAction.PostLaunchAction(logger, PluginManagerType.ModManager, true, cancelToken.Token);
+                    }
                 }
                 catch (OperationCanceledException)
                 {
                     retCode = -1;
 
                     foreach (var executionAction in App.PluginManager.ExecutionActions)
+                    {
                         executionAction.PostLaunchAction(logger, PluginManagerType.ModManager, true, cancelToken.Token);
+                    }
 
                     // process was cancelled
                     App.Logger.Log("Launch Cancelled");
