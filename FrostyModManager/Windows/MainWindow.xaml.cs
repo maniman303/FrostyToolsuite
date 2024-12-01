@@ -1089,6 +1089,19 @@ namespace FrostyModManager
                 if (idx != -1)
                     selectedPack.AppliedMods.RemoveAt(idx);
 
+                if (mod is FrostyMod && !((FrostyMod)mod).NewFormat)
+                {
+                    var fiNameWithoutExtension = fi.Name.Substring(0, fi.Name.Length - fi.Extension.Length).ToLower();
+
+                    var modFiles = Directory.GetFiles(modsDir.FullName).Select(x => new FileInfo(x)).ToList();
+                    var archives = modFiles.Where(x => x.Name.ToLower().StartsWith(fiNameWithoutExtension) && x.Extension.ToLower() == ".archive").ToList();
+
+                    foreach (var archive in archives)
+                    {
+                        File.Delete(archive.FullName);
+                    }
+                }
+
                 if (!fi.Exists)
                     continue;
 
