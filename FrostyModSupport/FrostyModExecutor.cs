@@ -1083,15 +1083,22 @@ namespace Frosty.ModSupport
             }
 
             // check for already running process
-            Process[] processes = Process.GetProcesses();
-            string processName = ProfilesLibrary.ProfileName;
-            foreach (Process process in processes)
+            try
             {
-                if (process.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase))
+                Process[] processes = Process.GetProcesses();
+                string processName = ProfilesLibrary.ProfileName;
+                foreach (Process process in processes)
                 {
-                    FrostyMessageBox.Show(string.Format("Unable to launch process as there is already a running process with process Id {0}", process.Id), "Frosty Toolsuite");
-                    return -1;
+                    if (process.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        FrostyMessageBox.Show(string.Format("Unable to launch process as there is already a running process with process Id {0}", process.Id), "Frosty Toolsuite");
+                        return -1;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Info($"Encountered exception during process scanning. It doesn't affect mod installation. Details {ex.Message}");
             }
 
             Stopwatch watch = new Stopwatch();
