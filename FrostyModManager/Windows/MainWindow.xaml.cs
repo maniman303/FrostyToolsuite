@@ -1339,8 +1339,12 @@ namespace FrostyModManager
 
                     try
                     {
+                        FileLogger.Info($"Loading mod '{filename}.'");
+
                         if (IsCompressed(fi.Name))
                         {
+                            FileLogger.Info("Mod is compressed.");
+
                             List<string> mods = new List<string>();
                             List<int> format = new List<int>();
                             List<string> archives = new List<string>();
@@ -1348,9 +1352,10 @@ namespace FrostyModManager
 
                             // create decompressor
                             IDecompressor decompressor = null;
-                            if (fi.Extension == ".rar") decompressor = new RarDecompressor();
-                            else if (fi.Extension == ".zip" || fi.Extension == ".fbpack") decompressor = new ZipDecompressor();
-                            else if (fi.Extension == ".7z") decompressor = new SevenZipDecompressor();
+                            var extension = fi.Extension.ToLower();
+                            if (extension == ".rar") decompressor = new RarDecompressor();
+                            else if (extension == ".zip" || extension == ".fbpack") decompressor = new ZipDecompressor();
+                            else if (extension == ".7z") decompressor = new SevenZipDecompressor();
 
                             try
                             {
@@ -1359,7 +1364,7 @@ namespace FrostyModManager
                                 foreach (CompressedFileInfo compressedFi in decompressor.EnumerateFiles())
                                 {
 
-                                    if (compressedFi.Extension == ".fbpack")
+                                    if (compressedFi.Extension.ToLower() == ".fbpack")
                                     {
                                         //create temp file
                                         DirectoryInfo tempdir = new DirectoryInfo($"temp/");
@@ -1380,11 +1385,11 @@ namespace FrostyModManager
 
                                         fbpacks++;
                                     }
-                                    else if (compressedFi.Extension == ".fbcollection")
+                                    else if (compressedFi.Extension.ToLower() == ".fbcollection")
                                     {
                                         collections.Add(compressedFi.Filename);
                                     }
-                                    else if (compressedFi.Extension == ".fbmod")
+                                    else if (compressedFi.Extension.ToLower() == ".fbmod")
                                     {
                                         string modFilename = compressedFi.Filename;
                                         byte[] buffer = decompressor.DecompressToMemory();
@@ -1411,11 +1416,11 @@ namespace FrostyModManager
                                             }
                                         }
                                     }
-                                    else if (compressedFi.Extension == ".archive")
+                                    else if (compressedFi.Extension.ToLower() == ".archive")
                                     {
                                         archives.Add(compressedFi.Filename);
                                     }
-                                    else if (compressedFi.Filename == "manifest.json")
+                                    else if (compressedFi.Filename.ToLower() == "manifest.json")
                                     {
                                         using (StreamReader reader = new StreamReader(compressedFi.Stream))
                                         {
@@ -1498,6 +1503,8 @@ namespace FrostyModManager
                         }
                         else if (fi.Extension == ".daimod")
                         {
+                            FileLogger.Info("Mod is DAI mod.");
+
                             // special handling for DAI mod files
                             using (NativeReader reader = new NativeReader(new FileStream(fi.FullName, FileMode.Open)))
                             {
@@ -1679,24 +1686,33 @@ namespace FrostyModManager
                         }
                         else if (fi.Extension == ".fbcollection")
                         {
+                            FileLogger.Info("Mod is fbcolletion.");
+
                             collections.Add(fi.Name);
                         }
                         else
                         {
                             // dont allow any files without fbmod extension
-                            if (fi.Extension != ".fbmod")
+                            if (fi.Extension.ToLower() != ".fbmod")
                             {
-                                if (fi.Extension == ".archive")
+                                if (fi.Extension.ToLower() == ".archive")
                                     continue;
+
+                                FileLogger.Info("Mod is not fbmod.");
+
 
                                 errors.Add(new ImportErrorInfo() { filename = fi.Name, error = "File is not a valid Frosty Mod." });
                                 continue;
                             }
 
+                            FileLogger.Info("Mod is fbmod.");
+
                             // make sure mod is designed for current profile
                             bool newFormat = false;
                             using (FileStream stream = new FileStream(fi.FullName, FileMode.Open, FileAccess.Read))
                             {
+                                FileLogger.Info("Verifying fbmod.");
+
                                 int retCode = VerifyMod(stream);
                                 if ((retCode & 1) != 0)
                                 {
@@ -1714,7 +1730,7 @@ namespace FrostyModManager
                                 }
                                 else if (retCode == -3)
                                 {
-                                    errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod was found to be invalid and cannot be used" });
+                                    errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod was found to be invalid and cannot be used." });
                                     continue;
                                 }
 
@@ -1724,8 +1740,10 @@ namespace FrostyModManager
 
                             if (!newFormat)
                             {
+                                FileLogger.Info("Validate old format archive file.");
+
                                 // make sure mod has archive file
-                                if (!File.Exists(fi.FullName.Replace(".fbmod", "_01.archive")))
+                                if (!File.Exists(fi.FullName.ToLower().Replace(".fbmod", "_01.archive")))
                                 {
                                     errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod is missing the archive component." });
                                     continue;
@@ -1733,61 +1751,75 @@ namespace FrostyModManager
                             }
 
                             // check for existing mod of same name
+                            FileLogger.Info("Check if mod with same name already exists.");
+                            FrostyMod existingMod = availableMods.Find((IFrostyMod a) => a.Filename.ToLower().CompareTo(fi.Name.ToLower()) == 0) as FrostyMod;
+                            if (existingMod != null)
                             {
-                                FrostyMod existingMod = availableMods.Find((IFrostyMod a) => a.Filename.ToLower().CompareTo(fi.Name.ToLower()) == 0) as FrostyMod;
-                                if (existingMod != null)
+                                availableMods.Remove(existingMod);
+                                foreach (FileInfo archiveFi in modsDir.GetFiles(fi.Name.ToLower().Replace(".fbmod", "") + "_*.archive"))
                                 {
-                                    availableMods.Remove(existingMod);
-                                    foreach (FileInfo archiveFi in modsDir.GetFiles(fi.Name.Replace(".fbmod", "") + "_*.archive"))
-                                    {
-                                        File.Delete(archiveFi.FullName);
-                                    }
-                                    File.Delete(modsDir.FullName + "/" + fi.Name);
+                                    File.Delete(archiveFi.FullName);
                                 }
+                                File.Delete(modsDir.FullName + "/" + fi.Name);
                             }
 
                             // copy mod over
+                            FileLogger.Info($"Copy mod to mods dir '{modsDir.FullName}'.");
                             File.Copy(fi.FullName, Path.Combine(modsDir.FullName, fi.Name));
-                            foreach (FileInfo archiveFi in fi.Directory.GetFiles(fi.Name.Replace(".fbmod", "") + "_*.archive"))
+                            foreach (FileInfo archiveFi in fi.Directory.GetFiles(fi.Name.ToLower().Replace(".fbmod", "") + "_*.archive"))
                             {
                                 File.Copy(archiveFi.FullName, Path.Combine(modsDir.FullName, archiveFi.Name));
                             }
 
                             // add mod to manager
+                            FileLogger.Info("Add mod to manager.");
                             fi = new FileInfo(Path.Combine(modsDir.FullName, fi.Name));
                             lastInstalledMod = AddMod(fi.FullName, newFormat ? 1 : 0);
                         }
 
                         if (collections.Count > 0)
                         {
-                            if (filename.Contains(".zip"))
+                            FileLogger.Info("Finishing collections.");
+
+                            if (filename.ToLower().Contains(".zip"))
                             {
+                                FileLogger.Info($"Decompressing zip collection '{filename}'.");
+
                                 // now actually decompress files
                                 ZipDecompressor decompressor = new ZipDecompressor();
                                 decompressor.OpenArchive(filename);
-                                foreach (CompressedFileInfo compressedFi in decompressor.EnumerateFiles())
+
+                                var compressedFiles = decompressor.EnumerateFiles().ToList();
+
+                                FileLogger.Info($"Zip has {compressedFiles.Count} files.");
+
+                                foreach (CompressedFileInfo compressedFi in compressedFiles)
                                 {
+                                    FileLogger.Info($"Decompresssing file '{compressedFi.Filename}' from zip.");
+
                                     if (collections.Contains(compressedFi.Filename))
                                     {
                                         decompressor.DecompressToFile(Path.Combine(modsDir.FullName, compressedFi.Filename));
                                     }
                                 }
                             }
-                            else if (filename.Contains(".fbcollection"))
+                            else if (filename.ToLower().Contains(".fbcollection"))
                             {
+                                FileLogger.Info($"Collection '{filename}' is a fbcollection.");
                                 File.Copy(fi.FullName, Path.Combine(modsDir.FullName, fi.Name));
                             }
                         }
                     }
                     catch (FrostyModLoadException e)
                     {
-                        FileLogger.Info($"Exception while installing mods. Details: {e.Message}");
+                        FileLogger.Info($"Exception while loading mod '{fi.Name}'. Details: {e.Message}");
                         errors.Add(new ImportErrorInfo { error = e.Message, filename = fi.Name });
                         File.Delete(fi.FullName);
                     }
                     catch (Exception ex)
                     {
-                        FileLogger.Info($"Exception while installing mods. Details: {ex.Message}");
+                        FileLogger.Info($"Exception while installing mod '{fi.Name}'. Details: {ex.Message}");
+                        errors.Add(new ImportErrorInfo { error = ex.Message, filename = fi.Name });
                     }
                 }
 

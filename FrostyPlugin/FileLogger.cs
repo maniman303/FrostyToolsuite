@@ -28,7 +28,7 @@ namespace Frosty.Core
         {
             if (!IsLogInit)
             {
-                return;
+                Init();
             }
 
             lock(locks)
