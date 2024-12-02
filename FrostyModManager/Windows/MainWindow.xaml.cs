@@ -1772,7 +1772,7 @@ namespace FrostyModManager
                                 if (!File.Exists(archivePath))
                                 {
                                     FileLogger.Info($"Missing archive file at '{archivePath}'.");
-                                    errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod is missing the archive component." });
+                                    errors.Add(new ImportErrorInfo { filename = fi.Name, error = $"Mod is missing the archive component at '{archivePath}'." });
                                     continue;
                                 }
                             }
