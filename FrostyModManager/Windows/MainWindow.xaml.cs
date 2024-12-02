@@ -1179,7 +1179,10 @@ namespace FrostyModManager
             }
 
             if (mod.GameVersion != fs.Head)
+            {
                 mod.AddWarning("Mod was designed for a different game version");
+            }
+
             lock (availableMods)
             {
                 availableMods.Add(mod);
