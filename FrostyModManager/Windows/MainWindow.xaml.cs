@@ -1448,6 +1448,7 @@ namespace FrostyModManager
                             }
                             catch
                             {
+                                FileLogger.Info($"Failed to read archive of '{fi.FullName}'.");
                                 errors.Add(new ImportErrorInfo() { filename = fi.Name, error = "Failed to read Archive." });
                             }
 
@@ -1842,13 +1843,13 @@ namespace FrostyModManager
                     }
                     catch (FrostyModLoadException e)
                     {
-                        FileLogger.Info($"Exception while loading mod '{fi.Name}'. Details: {e.Message}");
+                        FileLogger.Info($"Exception while loading mod '{fi.Name}'. Details: {e}");
                         errors.Add(new ImportErrorInfo { error = e.Message, filename = fi.Name });
                         File.Delete(fi.FullName);
                     }
                     catch (Exception ex)
                     {
-                        FileLogger.Info($"Exception while installing mod '{fi.Name}'. Details: {ex.Message}");
+                        FileLogger.Info($"Exception while installing mod '{fi.Name}'. Details: {ex}");
                         errors.Add(new ImportErrorInfo { error = ex.Message, filename = fi.Name });
                     }
                 }
