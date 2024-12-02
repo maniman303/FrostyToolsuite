@@ -141,6 +141,7 @@
     <Compile Include="Extensions\DataExplorerContextMenuExtension.cs" />
     <Compile Include="Extensions\ExecutionAction.cs" />
     <Compile Include="Extensions\StartupAction.cs" />
+    <Compile Include="ArchiveHelper.cs" />
     <Compile Include="FileLogger.cs" />
     <Compile Include="FrostyConfiguration.cs" />
     <Compile Include="FrostyLogger.cs" />

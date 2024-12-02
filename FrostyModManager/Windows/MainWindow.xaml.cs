@@ -1730,19 +1730,23 @@ namespace FrostyModManager
                                 if ((retCode & 1) != 0)
                                 {
                                     // continue with import (warning)
+                                    FileLogger.Info("Mod was designed for a different game version, it may or may not work.");
                                     errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod was designed for a different game version, it may or may not work.", isWarning = true });
                                 }
                                 else if (retCode == -1)
                                 {
+                                    FileLogger.Info("File is not a valid Frosty Mod.");
                                     errors.Add(new ImportErrorInfo { filename = fi.Name, error = "File is not a valid Frosty Mod." });
                                 }
                                 else if (retCode == -2)
                                 {
+                                    FileLogger.Info("Mod was not designed for this game.");
                                     errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod was not designed for this game." });
                                     continue;
                                 }
                                 else if (retCode == -3)
                                 {
+                                    FileLogger.Info("Mod was found to be invalid and cannot be used.");
                                     errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod was found to be invalid and cannot be used." });
                                     continue;
                                 }
@@ -1755,9 +1759,19 @@ namespace FrostyModManager
                             {
                                 FileLogger.Info("Validate old format archive file.");
 
-                                // make sure mod has archive file
-                                if (!File.Exists(fi.FullName.ToLower().Replace(".fbmod", "_01.archive")))
+                                var archivePath = ArchiveHelper.GetArchivePath(fi.FullName, out var errorMessage);
+
+                                if (string.IsNullOrWhiteSpace(archivePath))
                                 {
+                                    FileLogger.Info($"Could not get archive path for mod '{fi.FullName}'. Details: {errorMessage}");
+                                    errors.Add(new ImportErrorInfo { filename = fi.Name, error = $"Could not get archive path. Details: {errorMessage}" });
+                                    continue;
+                                }
+
+                                // make sure mod has archive file
+                                if (!File.Exists(archivePath))
+                                {
+                                    FileLogger.Info($"Missing archive file at '{archivePath}'.");
                                     errors.Add(new ImportErrorInfo { filename = fi.Name, error = "Mod is missing the archive component." });
                                     continue;
                                 }
@@ -1769,7 +1783,7 @@ namespace FrostyModManager
                             if (existingMod != null)
                             {
                                 availableMods.Remove(existingMod);
-                                foreach (FileInfo archiveFi in modsDir.GetFiles(fi.Name.ToLower().Replace(".fbmod", "") + "_*.archive"))
+                                foreach (FileInfo archiveFi in modsDir.GetFiles(fi.Name.ToLower().Replace(".fbmod", string.Empty) + "_*.archive"))
                                 {
                                     File.Delete(archiveFi.FullName);
                                 }
@@ -1779,7 +1793,7 @@ namespace FrostyModManager
                             // copy mod over
                             FileLogger.Info($"Copy mod to mods dir '{modsDir.FullName}'.");
                             File.Copy(fi.FullName, Path.Combine(modsDir.FullName, fi.Name));
-                            foreach (FileInfo archiveFi in fi.Directory.GetFiles(fi.Name.ToLower().Replace(".fbmod", "") + "_*.archive"))
+                            foreach (FileInfo archiveFi in fi.Directory.GetFiles(fi.Name.ToLower().Replace(".fbmod", string.Empty) + "_*.archive"))
                             {
                                 File.Copy(archiveFi.FullName, Path.Combine(modsDir.FullName, archiveFi.Name));
                             }
