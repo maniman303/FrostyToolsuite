@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using Frosty.Controls;
+using Frosty.Core;
 
 namespace FrostyModManager
 {
@@ -37,9 +38,19 @@ namespace FrostyModManager
 
         private void addButton_Click(object sender, RoutedEventArgs e)
         {
-            if (profileNameTextBox.Text == "")
+            if (string.IsNullOrWhiteSpace(profileNameTextBox.Text))
             {
-                FrostyMessageBox.Show("Profile name must not be empty", "Frosty Mod Manager");
+                FrostyMessageBox.Show("Profile name must not be empty.", "Frosty Mod Manager");
+
+                DialogResult = false;
+                return;
+            }
+
+            if (profileNameTextBox.Text.ContainsWhiteSpace())
+            {
+                FrostyMessageBox.Show("Profile name cannot use white space, like spacebars.", "Frosty Mod Manager");
+
+                DialogResult = false;
                 return;
             }
 

@@ -836,6 +836,13 @@ namespace FrostyModManager
 
             }
 
+            if (selectedPack.Name.ContainsWhiteSpace())
+            {
+                FrostyMessageBox.Show("Launching game with a profile name which contains white space, like spacebars, will fail.\r\n", "Mods installation failed");
+
+                return;
+            }
+
             // launch
             int retCode = -6;
             FrostyTaskWindow.Show("Installing mods", "", (logger) =>
@@ -882,6 +889,12 @@ namespace FrostyModManager
             if (retCode == 0)
             {
                 var arguments = $"-dataPath \"ModData/{App.SelectedPack}\"";
+
+                if (!string.IsNullOrWhiteSpace(additionalArgs))
+                {
+                    arguments += $" {additionalArgs}";
+                }
+
                 var clipBoardArgs = arguments;
 
                 StringBuilder sb = new StringBuilder();
