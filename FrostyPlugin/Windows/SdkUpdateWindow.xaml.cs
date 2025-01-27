@@ -201,7 +201,7 @@ namespace Frosty.Core.Windows
                 return false;
             }
 
-            reader.Position =     offsets[1] + 3;
+            reader.Position = offsets[1] + 3;
             int newValue = reader.ReadInt();
             reader.Position = offsets[1] + 3 + newValue + 4;
             updateState.TypeInfoOffset = reader.ReadLong();
