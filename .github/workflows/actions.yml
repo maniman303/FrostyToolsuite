@@ -23,13 +23,17 @@ jobs:
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
-    - name: Install Visual Studio Build Tools
-      run: choco install visualstudio2022buildtools -y
+    - name: Install Visual Studio Build Tools with required workloads
+      run: |
+        choco install visualstudio2022buildtools -y --package-parameters `
+          "--add Microsoft.VisualStudio.Workload.ManagedDesktop `
+          --add Microsoft.VisualStudio.Workload.NativeDesktop `
+          --includeRecommended --includeOptional"
 
     - name: Set up .NET SDK
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '4.8.2' # Adjust this to the required .NET version for FMM
+        dotnet-version: '4.8.1' # Adjust this to the required .NET version for FMM
 
     - name: Restore dependencies
       run: dotnet restore
