@@ -3,6 +3,8 @@
 
 2.Install the following dependencies to your wineprefix:
 ```
+vcrun2017
+dotnet48
 ```
 
 3.Run `taskmgr` inside the wineprefix
