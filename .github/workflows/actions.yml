@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
   build:
@@ -16,10 +17,19 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Install Chocolatey (if not already installed)
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+    - name: Install Visual Studio Build Tools
+      run: choco install visualstudio2022buildtools -y
+
     - name: Set up .NET SDK
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '4.8.2'
+        dotnet-version: '6.0.x' # Adjust this to the required .NET version for FMM
 
     - name: Restore dependencies
       run: dotnet restore
