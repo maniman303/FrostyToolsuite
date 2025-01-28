@@ -1,1 +1,40 @@
+name: Build Frosty Mod Manager (Windows)
 
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '4.8.2'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build the project
+      run: dotnet build --configuration Release
+
+    - name: Run tests (if any)
+      run: dotnet test
+
+    - name: Publish the project
+      run: dotnet publish -c Release -o ./publish
+
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: frosty-mod-manager
+        path: ./publish
