@@ -18,7 +18,7 @@ winmm
 
 5.Load & apply the mods you want
 
-6.Add the `GAME_DATA_DIR` and the path to your modpack (for most people its just `Default`) 
+6.Add the `GAME_DATA_DIR` and the path to your modpack (for most people its just `C:\Program Files\EA Games\Plants vs Zombies Garden Warfare\ModData\Default`) 
 
 (You need to get the path for that folder using a wine/windows explorer)
 
