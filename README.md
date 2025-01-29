@@ -11,12 +11,10 @@ This build has both the garden warfare 1 profile and the frosty mod manager linu
 
 - @maniman303 (For the frosty linux patch)
 
-- @Twig6943 / Me (For searching for this shit. Let me tell you it definetly wasn't easy)
+- @Ardishko (tester)
 
 - @Karl42408 (Allowed me to compile this on their pc)
 
 - @M_C7 (Allowed me to compile this on their pc)
 
-# Shoutouts
-
-@Ardishko <3 (real one --no-homo)
+- @Twig6943 / Me (For searching for this shit. Let me tell you it definetly wasn't easy)
