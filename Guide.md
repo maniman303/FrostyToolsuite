@@ -20,7 +20,7 @@ winmm
 
 6.Add the `GAME_DATA_DIR` and the path to your modpack (for most people its just `Default`) 
 
-(You need to get the path to that folder using a wine/windows explorer)
+(You need to get the path for that folder using a wine/windows explorer)
 
 ![image](https://github.com/user-attachments/assets/201b2a05-787c-4c91-bf0a-a8f1af8ff79e)
 
