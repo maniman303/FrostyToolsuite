@@ -5,8 +5,10 @@
 2.Add the following dlloverrides to your wineprefix:
 
 ```
-winmm // (native,builtin)
+winmm
 ```
+
+(Should be set to `native,builtin`)
 
 3.Run `taskmgr` inside the wineprefix
 
