@@ -2089,7 +2089,7 @@ namespace FrostySdk.Managers
                     };
 
                     // SWBF2: patch weapon bundles with incorrect start
-                    if (bentry.Name.StartsWith("win32/Win32"))
+                    if (bentry.Name.StartsWith("win32/Win32", StringComparison.InvariantCultureIgnoreCase))
                         bentry.Name = bentry.Name.Remove(0, 6);
 
                     if(!bIsPatched)
@@ -2147,10 +2147,22 @@ namespace FrostySdk.Managers
                         {
                             entry.Guid = ebxGuid;
                             if (ebxGuidList.ContainsKey(entry.Guid))
+                            {
                                 continue;
+                            }
+
                             ebxGuidList.Add(ebxGuid, entry);
                         }
-                        ebxList.Add(entry.Name, entry);
+
+                        if (ebxList.ContainsKey(entry.Name))
+                        {
+                            SdkFileLogger.Info($"Replacing '{entry.Name}' in ebxList.");
+                            ebxList[entry.Name] = entry;
+                        }
+                        else
+                        {
+                            ebxList.Add(entry.Name, entry);
+                        }
                     }
                 }
 
@@ -2194,9 +2206,28 @@ namespace FrostySdk.Managers
 
                     if (!bIsPatched)
                     {
-                        resList.Add(entry.Name, entry);
+                        if (resList.ContainsKey(entry.Name))
+                        {
+                            SdkFileLogger.Info($"Replacing '{entry.Name}' in resList.");
+                            resList[entry.Name] = entry;
+                        }
+                        else
+                        {
+                            resList.Add(entry.Name, entry);
+                        }
+
                         if (entry.ResRid != 0)
-                            resRidList.Add(entry.ResRid, entry);
+                        {
+                            if (resRidList.ContainsKey(entry.ResRid))
+                            {
+                                SdkFileLogger.Info($"Replacing '{entry.ResRid}' with name '{entry.Name}' in resRidList.");
+                                resRidList[entry.ResRid] = entry;
+                            }
+                            else
+                            {
+                                resRidList.Add(entry.ResRid, entry);
+                            }
+                        }
                     }
                 }
 
