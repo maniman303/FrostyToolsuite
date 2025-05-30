@@ -2156,7 +2156,7 @@ namespace FrostySdk.Managers
 
                         if (ebxList.ContainsKey(entry.Name))
                         {
-                            SdkFileLogger.Info($"Replacing '{entry.Name}' in ebxList.");
+                            SdkFileLogger.Info($"Replacing '{entry.Name}' with display '{entry.DisplayName}' in ebxList.");
                             ebxList[entry.Name] = entry;
                         }
                         else
@@ -2208,7 +2208,7 @@ namespace FrostySdk.Managers
                     {
                         if (resList.ContainsKey(entry.Name))
                         {
-                            SdkFileLogger.Info($"Replacing '{entry.Name}' in resList.");
+                            SdkFileLogger.Info($"Replacing '{entry.Name}' with display '{entry.DisplayName}' in resList.");
                             resList[entry.Name] = entry;
                         }
                         else
@@ -2220,7 +2220,7 @@ namespace FrostySdk.Managers
                         {
                             if (resRidList.ContainsKey(entry.ResRid))
                             {
-                                SdkFileLogger.Info($"Replacing '{entry.ResRid}' with name '{entry.Name}' in resRidList.");
+                                SdkFileLogger.Info($"Replacing '{entry.ResRid}' with name '{entry.Name}' and display '{entry.DisplayName}' in resRidList.");
                                 resRidList[entry.ResRid] = entry;
                             }
                             else
@@ -2285,7 +2285,17 @@ namespace FrostySdk.Managers
                         entry.Bundles.Add(reader.ReadInt());
 
                     if(!bIsPatched)
-                        chunkList.Add(entry.Id, entry);
+                    {
+                        if (chunkList.ContainsKey(entry.Id))
+                        {
+                            SdkFileLogger.Info($"Replacing '{entry.Id}' with name '{entry.Name}' and display '{entry.DisplayName}' in chunkList.");
+                            chunkList[entry.Id] = entry;
+                        }
+                        else
+                        {
+                            chunkList.Add(entry.Id, entry);
+                        }
+                    }
                 }
             }
 
