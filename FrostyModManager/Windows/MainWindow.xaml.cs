@@ -838,7 +838,7 @@ namespace FrostyModManager
 
             if (selectedPack.Name.ContainsWhiteSpace())
             {
-                FrostyMessageBox.Show("Launching game with a profile name which contains white space, like spacebars, will fail.\r\n", "Mods installation failed");
+                FrostyMessageBox.Show($"Launching game with a profile name '{selectedPack.Name}' will fail. This name contains white space, like spacebars or enters.\r\n", "Mods installation failed");
 
                 return;
             }
