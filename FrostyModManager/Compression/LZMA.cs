@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-//using SevenZip.Compression.LZMA;
 using System.IO;
 using FrostySdk.IO;
 using System.Collections;
@@ -575,16 +574,16 @@ namespace FrostyModManager.Compression
             reader = null;
         }
 
-        public void DecompressToFile(string filename)
+        public void DecompressToFile(CompressedFileInfo fileInfo, string filename)
         {
             using (FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
             {
-                byte[] buffer = DecompressToMemory();
+                byte[] buffer = DecompressToMemory(fileInfo);
                 fs.Write(buffer, 0, buffer.Length);
             }
         }
 
-        public byte[] DecompressToMemory()
+        public byte[] DecompressToMemory(CompressedFileInfo fileInfo)
         {
             byte[] buffer = new byte[currentLength];
 
