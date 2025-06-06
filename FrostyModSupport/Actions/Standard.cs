@@ -1088,7 +1088,7 @@ namespace Frosty.ModSupport
                                         AssetInfo info = totalAssetInfo[y];
 
                                         long size = info.Asset.GetValue<long>("originalSize");
-                                        uint blockSize = (uint)((size / 0x10000) + ((size % 0x10000) != 0 ? 1 : 0));
+                                        uint blockSize = (uint)((ulong)(size / 0x10000) + (ulong)((ulong)(size % 0x10000) != 0 ? 1 : 0));
 
                                         if (info.Removed)
                                         {
@@ -1108,7 +1108,7 @@ namespace Frosty.ModSupport
                                             if (!info.Inserted)
                                             {
                                                 long origSize = info.BaseAsset.GetValue<long>("originalSize");
-                                                uint origBlockSize = (uint)((origSize / 0x10000) + ((origSize % 0x10000) != 0 ? 1 : 0));
+                                                uint origBlockSize = (uint)((ulong)(origSize / 0x10000) + (ulong)((ulong)(origSize % 0x10000) != 0 ? 1 : 0));
                                                 if (origBlockSize > 0)
                                                     writer.Write(origBlockSize | 0x40000000, Endian.Big);
                                             }

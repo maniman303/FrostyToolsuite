@@ -4,9 +4,11 @@ using Frosty.Core.Mod;
 using Frosty.Hash;
 using FrostyModManager;
 using FrostySdk;
+using FrostySdk.Ebx;
 using FrostySdk.Interfaces;
 using FrostySdk.IO;
 using FrostySdk.Managers;
+using FrostySdk.Resources;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
@@ -17,6 +19,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using static Frosty.Core.Screens.GFSDK_ShadowLib;
 
 namespace Frosty.ModSupport
 {
@@ -24,7 +27,104 @@ namespace Frosty.ModSupport
     {
         private class ArchiveInfo
         {
-            public byte[] Data;
+            private byte[] _data;
+
+            private AssetManager _assetManager;
+            private AssetEntry _assetEntry;
+
+            private IResourceContainer _resourceContainer;
+            private BaseModResource _modResource;
+
+            private string _modPath;
+            private DbObject _dbObject;
+
+            private FileSystem _fs;
+            private ManifestFileRef? _fileRef = null;
+            private long _offset;
+
+            public void SetResourceOrigin(IResourceContainer resourceContainer, BaseModResource resource)
+            {
+                _resourceContainer = resourceContainer;
+                _modResource = resource;
+            }
+
+            public void SetRawOrigin(AssetManager assetManager, AssetEntry assetEntry)
+            {
+                _assetManager = assetManager;
+                _assetEntry = assetEntry;
+            }
+
+            public void SetLegacyResourceOrigin(string modPath, DbObject dbObject, AssetEntry assetEntry)
+            {
+                _modPath = modPath;
+                _dbObject = dbObject;
+                _assetEntry = assetEntry;
+            }
+
+            public void SetLegacyRawOrigin(FileSystem fs, ManifestFileRef fileRef, long offset, AssetEntry assetEntry)
+            {
+                _fs = fs;
+                _fileRef = fileRef;
+                _offset = offset;
+                _assetEntry = assetEntry;
+            }
+
+            public byte[] Data
+            {
+                get
+                {
+                    if (_data != null && _data.Length >= 0)
+                    {
+                        return _data;
+                    }
+
+                    if (_resourceContainer != null && _modResource != null)
+                    {
+                        var result = _resourceContainer.GetResourceData(_modResource);
+                        if (result != null)
+                        {
+                            return result;
+                        }
+                    }
+
+                    if (_assetManager != null && _assetEntry != null)
+                    {
+                        var result = NativeReader.ReadInStream(_assetManager.GetRawStream(_assetEntry));
+                        if (result != null)
+                        {
+                            return result;
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(_modPath) && _dbObject != null && _assetEntry != null)
+                    {
+                        var result = GetResourceData(_modPath, _dbObject.GetValue<int>("archiveIndex"), _dbObject.GetValue<long>("archiveOffset"), (int)_assetEntry.Size);
+                        if (result != null)
+                        {
+                            return result;
+                        }
+                    }
+
+                    if (_fs != null && _fileRef != null && _assetEntry != null)
+                    {
+                        using (NativeReader reader = new NativeReader(new FileStream(_fs.ResolvePath(_fileRef.Value), FileMode.Open, FileAccess.Read)))
+                        {
+                            reader.Position = _offset;
+                            var result = reader.ReadBytes((int)_assetEntry.Size);
+                            if (result != null)
+                            {
+                                return result;
+                            }
+                        }
+                    }
+
+                    return _data;
+                }
+                set
+                {
+                    _data = value;
+                }
+            }
             public int RefCount;
         }
         private class ModBundleInfo
@@ -268,8 +368,11 @@ namespace Frosty.ModSupport
                 App.WhitelistedBundles.Add(chunksBundleHash);
             }
 
+            var processorCount = Math.Max(1, Environment.ProcessorCount / 2);
 
-            Parallel.ForEach(fmod.Resources, new ParallelOptions() { MaxDegreeOfParallelism = Environment.ProcessorCount }, resource =>
+            FileLogger.Info($"Using {processorCount} processor cores.");
+
+            Parallel.ForEach(fmod.Resources, new ParallelOptions() { MaxDegreeOfParallelism = processorCount }, resource =>
             {
                 // pull existing bundles from asset manager
                 HashSet<int> bundles = new HashSet<int>();
@@ -278,9 +381,13 @@ namespace Frosty.ModSupport
                 {
                     BundleEntry bEntry = new BundleEntry();
                     resource.FillAssetEntry(bEntry);
+                    
+                    lock (addedBundles[bEntry.SuperBundleId])
+                    {
+                        addedBundles.TryAdd(bEntry.SuperBundleId, new HashSet<string>());
 
-                    addedBundles.TryAdd(bEntry.SuperBundleId, new HashSet<string>());
-                    addedBundles[bEntry.SuperBundleId].Add(bEntry.Name);
+                        addedBundles[bEntry.SuperBundleId].Add(bEntry.Name);
+                    }
                 }
                 else if (resource.Type == ModResourceType.Ebx)
                 {
@@ -347,6 +454,8 @@ namespace Frosty.ModSupport
                             EbxAssetEntry entry = new EbxAssetEntry();
                             resource.FillAssetEntry(entry);
 
+                            var archiveInfo = new ArchiveInfo() { RefCount = 1 };
+
                             byte[] data = fmod.GetResourceData(resource);
                             var ebxEntry = am.GetEbxEntry(resource.Name);
 
@@ -354,23 +463,48 @@ namespace Frosty.ModSupport
                             {
                                 data = NativeReader.ReadInStream(am.GetRawStream(ebxEntry));
 
+                                if (data != null && data.Length > 0)
+                                {
+                                    archiveInfo.SetRawOrigin(am, ebxEntry);
+                                }
+                                else
+                                {
+                                    archiveInfo.Data = data;
+                                }
+
                                 entry.Sha1 = ebxEntry.Sha1;
                                 entry.OriginalSize = ebxEntry.OriginalSize;
                             }
-                            else if (ebxEntry != null)
+                            else
                             {
-                                // add in existing bundles
-                                foreach (int bid in ebxEntry.Bundles)
+                                if (data.Length > 0)
                                 {
-                                    bundles.Add(HashBundle(am.GetBundleEntry(bid)));
+                                    archiveInfo.SetResourceOrigin(fmod, resource);
+                                }
+                                else
+                                {
+                                    archiveInfo.Data = data;
+                                }
+
+                                if (ebxEntry != null)
+                                {
+                                    // add in existing bundles
+                                    foreach (int bid in ebxEntry.Bundles)
+                                    {
+                                        bundles.Add(HashBundle(am.GetBundleEntry(bid)));
+                                    }
                                 }
                             }
 
+                            //archiveInfo.Data = data;
                             entry.Size = data.Length;
 
                             modifiedEbx.TryAdd(entry.Name, entry);
-                            if (!archiveData.TryAdd(entry.Sha1, new ArchiveInfo() { Data = data, RefCount = 1 }))
+                            if (!archiveData.TryAdd(entry.Sha1, archiveInfo))
+                            {
                                 archiveData[entry.Sha1].RefCount++;
+                            }
+
                             numArchiveEntries++;
                         }
                     }
@@ -440,12 +574,23 @@ namespace Frosty.ModSupport
                             ResAssetEntry entry = new ResAssetEntry();
                             resource.FillAssetEntry(entry);
 
+                            var archiveInfo = new ArchiveInfo() { RefCount = 1 };
+
                             byte[] data = fmod.GetResourceData(resource);
                             var resEntry = am.GetResEntry(resource.Name);
 
                             if (data == null)
                             {
                                 data = NativeReader.ReadInStream(am.GetRawStream(resEntry));
+                                
+                                if (data != null && data.Length > 0)
+                                {
+                                    archiveInfo.SetRawOrigin(am, resEntry);
+                                }
+                                else
+                                {
+                                    archiveInfo.Data = data;
+                                }
 
                                 entry.Sha1 = resEntry.Sha1;
                                 entry.OriginalSize = resEntry.OriginalSize;
@@ -453,19 +598,32 @@ namespace Frosty.ModSupport
                                 entry.ResRid = resEntry.ResRid;
                                 entry.ResType = resEntry.ResType;
                             }
-                            else if (resEntry != null)
+                            else 
                             {
-                                // add in existing bundles
-                                foreach (int bid in resEntry.Bundles)
+                                if (data.Length > 0)
                                 {
-                                    bundles.Add(HashBundle(am.GetBundleEntry(bid)));
+                                    archiveInfo.SetResourceOrigin(fmod, resource);
+                                }
+                                else
+                                {
+                                    archiveInfo.Data = data;
+                                }
+
+                                if (resEntry != null)
+                                {
+                                    // add in existing bundles
+                                    foreach (int bid in resEntry.Bundles)
+                                    {
+                                        bundles.Add(HashBundle(am.GetBundleEntry(bid)));
+                                    }
                                 }
                             }
 
+                            //archiveInfo.Data = data;
                             entry.Size = data.Length;
 
                             modifiedRes.TryAdd(entry.Name, entry);
-                            if (!archiveData.TryAdd(entry.Sha1, new ArchiveInfo() { Data = data, RefCount = 1 }))
+                            if (!archiveData.TryAdd(entry.Sha1, archiveInfo))
                                 archiveData[entry.Sha1].RefCount++;
                             numArchiveEntries++;
                         }
@@ -546,12 +704,23 @@ namespace Frosty.ModSupport
                             ChunkAssetEntry entry = new ChunkAssetEntry();
                             resource.FillAssetEntry(entry);
 
+                            var archiveInfo = new ArchiveInfo() { RefCount = 1 };
+
                             byte[] data = fmod.GetResourceData(resource);
                             var chunkEntry = am.GetChunkEntry(guid);
 
                             if (data == null)
                             {
                                 data = NativeReader.ReadInStream(am.GetRawStream(chunkEntry));
+
+                                if (data != null && data.Length > 0)
+                                {
+                                    archiveInfo.SetRawOrigin(am, chunkEntry);
+                                }
+                                else
+                                {
+                                    archiveInfo.Data = data;
+                                }
 
                                 entry.Sha1 = (chunkEntry.Sha1 == Sha1.Zero) ? Utils.GenerateSha1(data) : chunkEntry.Sha1;
                                 entry.OriginalSize = chunkEntry.OriginalSize;
@@ -613,20 +782,32 @@ namespace Frosty.ModSupport
                                     }
                                 }
                             }
-                            else if (chunkEntry != null)
+                            else 
                             {
-                                // add in existing bundles
-                                bundles.Add(chunksBundleHash);
-                                foreach (int bid in chunkEntry.Bundles)
+                                if (data.Length > 0)
                                 {
-                                    bundles.Add(HashBundle(am.GetBundleEntry(bid)));
+                                    archiveInfo.SetResourceOrigin(fmod, resource);
+                                }
+                                else
+                                {
+                                    archiveInfo.Data = data;
+                                }
+
+                                if (chunkEntry != null)
+                                {
+                                    // add in existing bundles
+                                    bundles.Add(chunksBundleHash);
+                                    foreach (int bid in chunkEntry.Bundles)
+                                    {
+                                        bundles.Add(HashBundle(am.GetBundleEntry(bid)));
+                                    }
                                 }
                             }
 
                             entry.Size = data.Length;
 
                             modifiedChunks.TryAdd(guid, entry);
-                            if (!archiveData.TryAdd(entry.Sha1, new ArchiveInfo() { Data = data, RefCount = 1 }))
+                            if (!archiveData.TryAdd(entry.Sha1, archiveInfo))
                                 archiveData[entry.Sha1].RefCount++;
                             numArchiveEntries++;
                         }
@@ -796,11 +977,22 @@ namespace Frosty.ModSupport
                         Size = resource.GetValue<long>("compressedSize")
                     };
 
+                    var archiveInfo = new ArchiveInfo() { RefCount = 1 };
+
                     byte[] buffer = null;
                     if (resource.HasValue("archiveIndex"))
                     {
                         entry.IsInline = resource.GetValue<bool>("shouldInline");
                         buffer = GetResourceData(modPath, resource.GetValue<int>("archiveIndex"), resource.GetValue<long>("archiveOffset"), (int)entry.Size);
+                        
+                        if (buffer != null && buffer.Length > 0)
+                        {
+                            archiveInfo.SetLegacyResourceOrigin(modPath, resource, entry);
+                        }
+                        else
+                        {
+                            archiveInfo.Data = buffer;
+                        }
                     }
                     else
                     {
@@ -812,13 +1004,23 @@ namespace Frosty.ModSupport
                             reader.Position = offset;
                             buffer = reader.ReadBytes((int)entry.Size);
                         }
+
+                        if (buffer != null && buffer.Length > 0)
+                        {
+                            archiveInfo.SetLegacyRawOrigin(fs, fileRef, offset, entry);
+                        }
+                        else
+                        {
+                            archiveInfo.Data = buffer;
+                        }
                     }
 
+                    //archiveInfo.Data = buffer;
                     entry.Sha1 = Utils.GenerateSha1(buffer);
 
                     modifiedEbx.TryAdd(entry.Name, entry);
                     if (!archiveData.ContainsKey(entry.Sha1))
-                        archiveData.TryAdd(entry.Sha1, new ArchiveInfo() { Data = buffer, RefCount = 1 });
+                        archiveData.TryAdd(entry.Sha1, archiveInfo);
                     else
                         archiveData[entry.Sha1].RefCount++;
                     numArchiveEntries++;
@@ -856,11 +1058,22 @@ namespace Frosty.ModSupport
                         ResMeta = resource.GetValue<byte[]>("resMeta")
                     };
 
+                    var archiveInfo = new ArchiveInfo() { RefCount = 1 };
+
                     byte[] buffer = null;
                     if (resource.HasValue("archiveIndex"))
                     {
                         entry.IsInline = resource.GetValue<bool>("shouldInline");
                         buffer = GetResourceData(modPath, resource.GetValue<int>("archiveIndex"), resource.GetValue<long>("archiveOffset"), (int)entry.Size);
+                        
+                        if (buffer != null && buffer.Length > 0)
+                        {
+                            archiveInfo.SetLegacyResourceOrigin(modPath, resource, entry);
+                        }
+                        else
+                        {
+                            archiveInfo.Data = buffer;
+                        }
                     }
                     else
                     {
@@ -872,13 +1085,22 @@ namespace Frosty.ModSupport
                             reader.Position = offset;
                             buffer = reader.ReadBytes((int)entry.Size);
                         }
+
+                        if (buffer != null && buffer.Length > 0)
+                        {
+                            archiveInfo.SetLegacyRawOrigin(fs, fileRef, offset, entry);
+                        }
+                        else
+                        {
+                            archiveInfo.Data = buffer;
+                        }
                     }
 
                     entry.Sha1 = Utils.GenerateSha1(buffer);
 
                     modifiedRes.TryAdd(entry.Name, entry);
                     if (!archiveData.ContainsKey(entry.Sha1))
-                        archiveData.TryAdd(entry.Sha1, new ArchiveInfo() { Data = buffer, RefCount = 1 });
+                        archiveData.TryAdd(entry.Sha1, archiveInfo);
                     else
                         archiveData[entry.Sha1].RefCount++;
                     numArchiveEntries++;
@@ -918,12 +1140,23 @@ namespace Frosty.ModSupport
                         IsTocChunk = resource.GetValue<bool>("tocChunk")
                     };
 
+                    var archiveInfo = new ArchiveInfo() { RefCount = 1 };
+
                     byte[] buffer = null;
                     if (resource.HasValue("archiveIndex"))
                     {
                         // obtain data from archive
                         entry.IsInline = resource.GetValue<bool>("shouldInline", false);
                         buffer = GetResourceData(modPath, resource.GetValue<int>("archiveIndex"), resource.GetValue<long>("archiveOffset"), (int)entry.Size);
+                        
+                        if (buffer != null && buffer.Length > 0)
+                        {
+                            archiveInfo.SetLegacyResourceOrigin(modPath, resource, entry);
+                        }
+                        else
+                        {
+                            archiveInfo.Data = buffer;
+                        }
                     }
                     else
                     {
@@ -935,6 +1168,15 @@ namespace Frosty.ModSupport
                         {
                             reader.Position = offset;
                             buffer = reader.ReadBytes((int)entry.Size);
+                        }
+
+                        if (buffer != null && buffer.Length > 0)
+                        {
+                            archiveInfo.SetLegacyRawOrigin(fs, fileRef, offset, entry);
+                        }
+                        else
+                        {
+                            archiveInfo.Data = buffer;
                         }
 
                         if (ProfilesLibrary.DataVersion == (int)ProfileVersion.StarWarsBattlefrontII || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5)
@@ -972,7 +1214,7 @@ namespace Frosty.ModSupport
 
                     modifiedChunks.TryAdd(entry.Id, entry);
                     if (!archiveData.ContainsKey(entry.Sha1))
-                        archiveData.TryAdd(entry.Sha1, new ArchiveInfo() { Data = buffer, RefCount = 1 });
+                        archiveData.TryAdd(entry.Sha1, archiveInfo);
                     else
                         archiveData[entry.Sha1].RefCount++;
                     numArchiveEntries++;
@@ -2181,6 +2423,8 @@ namespace Frosty.ModSupport
                     case "256MB": casMaxBytes = 268435456; break;
                 }
 
+                // FileLogger.Info($"Writing data for cas index {casIndex}...");
+
                 // if cas exceeds max size, create a new one (incrementing index)
                 if (currentCasStream == null || ((totalSize + info.Data.Length) > casMaxBytes))
                 {
@@ -2715,7 +2959,7 @@ namespace Frosty.ModSupport
             }
         }
 
-        private byte[] GetResourceData(string modFilename, int archiveIndex, long offset, int size)
+        private static byte[] GetResourceData(string modFilename, int archiveIndex, long offset, int size)
         {
             string archiveFilename = modFilename.Replace(".fbmod", "_" + archiveIndex.ToString("D2") + ".archive");
             if (!File.Exists(archiveFilename))
