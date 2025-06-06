@@ -1389,7 +1389,12 @@ namespace FrostyModManager
                             try
                             {
                                 // search out fbmods in archive
-                                decompressor.OpenArchive(filename);
+                                if (!decompressor.OpenArchive(filename))
+                                {
+                                    errors.Add(new ImportErrorInfo() { filename = fi.Name, error = "Archive is invalid." });
+                                    continue;
+                                }
+
                                 foreach (CompressedFileInfo compressedFi in decompressor.EnumerateFiles())
                                 {
                                     if (compressedFi.Extension.ToLower() == ".fbpack")
@@ -1468,7 +1473,7 @@ namespace FrostyModManager
                             if (mods.Count == 0 && fbpacks == 0)
                             {
                                 // no point continuing with this archive
-                                errors.Add(new ImportErrorInfo() { filename = fi.Name, error = "Archive contains no installable mods." });
+                                errors.Add(new ImportErrorInfo() { filename = fi.Name, error = "Archive contains no installable mods.", isWarning = true });
                                 continue;
                             }
 

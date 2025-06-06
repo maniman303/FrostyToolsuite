@@ -3,6 +3,8 @@ The most advanced modding platform for games running on DICE's Frostbite game en
 
 Uses [WinmmProxy](https://github.com/maniman303/winmm-proxy), [CryptHook](https://github.com/maniman303/CryptHook) and [Wine-symlink-helper](https://github.com/maniman303/wine-symlink-helper).
 
+Uses [SharpSevenZip](https://github.com/JeremyAnsel/SharpSevenZip)
+
 ## Changes in this fork
 
 - Fixed symbolic linking of files in mod deployment.
@@ -18,6 +20,7 @@ Uses [WinmmProxy](https://github.com/maniman303/winmm-proxy), [CryptHook](https:
 - Updated project to .NET framework 4.8.1.
 - Added exceptions logging for mod installation.
 - Added basic Wine installation validation.
+- Rewritten support for 7z archives.
 
 ## Linux and Steam guide
 
