@@ -1,5 +1,6 @@
 ﻿using Frosty.Controls;
 using Frosty.Core;
+using Frosty.Core.Windows;
 using FrostySdk;
 using FrostySdk.IO;
 using FrostySdk.Managers;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -340,9 +342,7 @@ namespace FrostyModManager.Windows
                 return;
             }
 
-            FileInfo fi = new FileInfo(ofd.FileName);
-
-            if (OperatingSystemHelper.IsWine() && !DriveHelper.IsZDrive(fi.FullName))
+            if (OperatingSystemHelper.IsWine() && !DriveHelper.IsZDrive(ofd.FileName))
             {
                 var sb = new StringBuilder();
                 sb.Append("Game is not located on Wine Z: drive, which is not recommended.\r\n\r\n");
@@ -352,10 +352,33 @@ namespace FrostyModManager.Windows
                 FrostyMessageBox.Show(sb.ToString(), "Frosty Mod Manager");
             }
 
+            AddGameProfile(ofd.FileName, out var errorMessage);
+
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                FrostyMessageBox.Show(errorMessage, "Frosty Mod Manager");
+            }
+
+            ConfigList.Items.Refresh();
+        }
+
+        private static bool CheckGameProfile(string path)
+        {
+            FileInfo fi = new FileInfo(path);
+
+            return ProfilesLibrary.HasProfile(fi.Name.Remove(fi.Name.Length - 4));
+        }
+
+        private void AddGameProfile(string path, out string errorMessage)
+        {
+            errorMessage = string.Empty;
+
+            FileInfo fi = new FileInfo(path);
+
             // try to load game profile 
             if (!ProfilesLibrary.HasProfile(fi.Name.Remove(fi.Name.Length - 4)))
             {
-                FrostyMessageBox.Show("There was an error when trying to load game using specified profile.", "Frosty Mod Manager");
+                errorMessage = "There was an error when trying to load game using specified profile.";
                 return;
             }
 
@@ -364,7 +387,7 @@ namespace FrostyModManager.Windows
             {
                 if (config.ProfileName == fi.Name.Remove(fi.Name.Length - 4))
                 {
-                    FrostyMessageBox.Show("That game already has a configuration.");
+                    errorMessage = "That game already has a configuration.";
                     return;
                 }
             }
@@ -373,8 +396,6 @@ namespace FrostyModManager.Windows
             Config.AddGame(fi.Name.Remove(fi.Name.Length - 4), fi.DirectoryName);
             configs.Add(new FrostyConfiguration(fi.Name.Remove(fi.Name.Length - 4)));
             Config.Save();
-
-            ConfigList.Items.Refresh();
         }
 
         private async void ConfigList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -429,23 +450,122 @@ namespace FrostyModManager.Windows
         {
             TryShowFlatpakMessage();
 
-            using (RegistryKey lmKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\\WOW6432Node"))
-            {
-                int totalCount = 0;
+            var games = new List<string>();
 
-                IterateSubKeys(lmKey, ref totalCount);
+            FrostyTaskWindow.Show("Scanning for games", "", (logger) =>
+            {
+                using (RegistryKey lmKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\\WOW6432Node"))
+                {
+                    int totalCount = 0;
+
+                    var regGames = IterateSubKeys(lmKey, ref totalCount);
+
+                    games.AddRange(regGames);
+                }
+
+                games.AddRange(ScanZDirectory());
+            });
+
+            foreach (var game in games)
+            {
+                AddGameProfile(game, out _);
             }
 
             ConfigList.Items.Refresh();
         }
 
-        private void IterateSubKeys(RegistryKey subKey, ref int totalCount)
+        private class PathItem
         {
+            public string Path { get; set; }
+            public int Depth { get; set; }
+        }
+
+        private List<string> ScanZDirectory()
+        {
+            var res = new List<string>();
+
+            var rootPath = "Z:\\";
+
+            if (!Directory.Exists(rootPath))
+            {
+                FileLogger.Info($"Drive '{rootPath}' was not found during scanning.");
+                return res;
+            }
+
+            var queue = new Queue<PathItem>();
+            string[] files;
+            string[] dirs;
+
+            queue.Enqueue(new PathItem { Path = rootPath, Depth = 1 });
+
+            while (queue.Count > 0)
+            {
+                var item = queue.Dequeue();
+
+                if (!Directory.Exists(item.Path))
+                {
+                    continue;
+                }
+
+                var dirName = Path.GetFileName(item.Path);
+                if (!string.IsNullOrWhiteSpace(dirName) && dirName.Trim().StartsWith("$"))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    files = Directory.GetFiles(item.Path, "*.exe");
+                }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (var file in files)
+                {
+                    if (CheckGameProfile(file))
+                    {
+                        res.Add(file);
+                    }
+                }
+
+                if (item.Depth >= 50)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    dirs = Directory.GetDirectories(item.Path).Where(d =>
+                    {
+                        var dirTempName = Path.GetFileName(d);
+                        return !string.IsNullOrWhiteSpace(dirTempName) && !dirTempName.Trim().StartsWith("$");
+                    }).ToArray();
+                }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (var dir in dirs)
+                {
+                    queue.Enqueue(new PathItem { Path = dir, Depth = item.Depth + 1 });
+                }
+            }
+
+            return res;
+        }
+
+        private List<string> IterateSubKeys(RegistryKey subKey, ref int totalCount)
+        {
+            var res = new List<string>();
+
             foreach (string subKeyName in subKey.GetSubKeyNames())
             {
                 try
                 {
-                    IterateSubKeys(subKey.OpenSubKey(subKeyName), ref totalCount);
+                    res.AddRange(IterateSubKeys(subKey.OpenSubKey(subKeyName), ref totalCount));
                 }
                 catch (System.Exception)
                 {
@@ -465,33 +585,17 @@ namespace FrostyModManager.Windows
 
                     foreach (string filename in Directory.EnumerateFiles(installDir, "*.exe"))
                     {
-                        FileInfo fi = new FileInfo(filename);
-                        string nameWithoutExt = fi.Name.Replace(fi.Extension, "");
-
-                        if (ProfilesLibrary.HasProfile(nameWithoutExt))
+                        if (CheckGameProfile(filename))
                         {
-                            foreach (FrostyConfiguration config in configs)
-                            {
-                                if (config.ProfileName == fi.Name.Remove(fi.Name.Length - 4))
-                                    return;
-                            }
-
-                            Config.AddGame(fi.Name.Remove(fi.Name.Length - 4), fi.DirectoryName);
-                            configs.Add(new FrostyConfiguration(fi.Name.Remove(fi.Name.Length - 4)));
-                            //Config ini = new Config();
-                            //ini.AddEntry("Init", "GamePath", fi.DirectoryName);
-                            //ini.AddEntry("Init", "Profile", fi.Name.Remove(fi.Name.Length - 4));
-                            //string fileName = "FrostyModManager " + ini.GetEntry("Init", "Profile", "") + ".ini";
-                            //ini.SaveEntries(fileName);
-
-                            //FrostyConfiguration cfg = new FrostyConfiguration(fileName);
-                            //configs.Add(cfg);
+                            res.Add(filename);
 
                             totalCount++;
                         }
                     }
                 }
             }
+
+            return res;
         }
     }
 }

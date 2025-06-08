@@ -2538,7 +2538,6 @@ namespace FrostyModManager
             ConflictPage = page;
             var items = ConflictInfos.Skip(ConflictPageSize * page).Take(ConflictPageSize).ToList();
 
-            // TODO: Update UI
             conflictsPrev.IsEnabled = page > 0;
             conflictsNext.IsEnabled = page < maxPage;
             conflictsPageText.Text = $"  Page {page + 1}  ";
