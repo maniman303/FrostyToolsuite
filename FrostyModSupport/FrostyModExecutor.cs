@@ -370,7 +370,7 @@ namespace Frosty.ModSupport
 
             var processorCount = Math.Max(1, Environment.ProcessorCount / 2);
 
-            FileLogger.Info($"Using {processorCount} processor cores.");
+            // FileLogger.Info($"Using {processorCount} processor cores.");
 
             Parallel.ForEach(fmod.Resources, new ParallelOptions() { MaxDegreeOfParallelism = processorCount }, resource =>
             {
@@ -381,11 +381,11 @@ namespace Frosty.ModSupport
                 {
                     BundleEntry bEntry = new BundleEntry();
                     resource.FillAssetEntry(bEntry);
-                    
+
+                    addedBundles.TryAdd(bEntry.SuperBundleId, new HashSet<string>());
+
                     lock (addedBundles[bEntry.SuperBundleId])
                     {
-                        addedBundles.TryAdd(bEntry.SuperBundleId, new HashSet<string>());
-
                         addedBundles[bEntry.SuperBundleId].Add(bEntry.Name);
                     }
                 }
@@ -1340,7 +1340,7 @@ namespace Frosty.ModSupport
             }
             catch (Exception ex)
             {
-                FileLogger.Info($"Encountered exception during process scanning. It doesn't affect mod installation. Details {ex.Message}");
+                FileLogger.Info($"Encountered exception during process scanning. It doesn't affect mod installation. Details: {ex.Message}");
             }
 
             Stopwatch watch = new Stopwatch();

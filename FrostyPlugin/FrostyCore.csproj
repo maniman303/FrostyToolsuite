@@ -138,6 +138,7 @@
     <Compile Include="Controls\VirtualizingTilePanel.cs" />
     <Compile Include="Converters\AssetEntryToBitmapSourceConverter.cs" />
     <Compile Include="Converters\VisibilityToBooleanConverter.cs" />
+    <Compile Include="DriveHelper.cs" />
     <Compile Include="Extensions\DataExplorerContextMenuExtension.cs" />
     <Compile Include="Extensions\ExecutionAction.cs" />
     <Compile Include="Extensions\StartupAction.cs" />

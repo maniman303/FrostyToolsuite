@@ -1,17 +1,18 @@
-﻿using System;
+﻿using Frosty.Controls;
+using Frosty.Core;
+using FrostySdk;
+using FrostySdk.IO;
+using FrostySdk.Managers;
+using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.IO;
-using FrostySdk;
-using Microsoft.Win32;
-using Frosty.Controls;
-using Frosty.Core;
-using FrostySdk.IO;
-using FrostySdk.Managers;
-using System.Linq;
 
 namespace FrostyModManager.Windows
 {
@@ -340,6 +341,16 @@ namespace FrostyModManager.Windows
             }
 
             FileInfo fi = new FileInfo(ofd.FileName);
+
+            if (OperatingSystemHelper.IsWine() && !DriveHelper.IsZDrive(fi.FullName))
+            {
+                var sb = new StringBuilder();
+                sb.Append("Game is not located on Wine Z: drive, which is not recommended.\r\n\r\n");
+                sb.Append("This can cause broken sym-links and game not booting, especially when game is launched through sandboxed environment like flatpak.");
+                sb.Append("\r\n\r\nAdd game via Z: drive for better stability.");
+
+                FrostyMessageBox.Show(sb.ToString(), "Frosty Mod Manager");
+            }
 
             // try to load game profile 
             if (!ProfilesLibrary.HasProfile(fi.Name.Remove(fi.Name.Length - 4)))

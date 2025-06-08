@@ -427,7 +427,8 @@ namespace FrostyModManager
 
             Config.Save();
 
-            Title = "Frosty Mod Manager - " + App.Version + " (" + ProfilesLibrary.DisplayName + ")";
+            Title = "Frosty Mod Manager - " + App.Version + " (" + ProfilesLibrary.DisplayName + ") ";
+            Title += OperatingSystemHelper.IsWine() ? "Linux" : "Windows";
 
             TypeLibrary.Initialize();
             App.PluginManager.Initialize();
@@ -441,6 +442,16 @@ namespace FrostyModManager
             else
             {
                 App.Logger.Log("Custom Mods Directory does not exist, using default instead");
+            }
+
+            if (OperatingSystemHelper.IsWine() && !DriveHelper.IsZDrive(gamePath))
+            {
+                var sb = new StringBuilder();
+                sb.Append("Game is not located on Wine Z: drive, which is not recommended.\r\n\r\n");
+                sb.Append("This can cause broken sym-links and game not booting, especially when game is launched through sandboxed environment like flatpak.");
+                sb.Append("\r\n\r\nAdd game via Z: drive for better stability.");
+
+                FrostyMessageBox.Show(sb.ToString(), "Frosty Mod Manager");
             }
 
             FrostyTaskWindow.Show("Loading Mods", "", (logger) =>
