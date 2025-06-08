@@ -1,17 +1,17 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Windows;
-using System.Windows.Controls;
-using Frosty.Controls;
+﻿using Frosty.Controls;
 using Frosty.Core;
 using Frosty.Core.Controls;
 using Frosty.Core.Windows;
 using Frosty.ModSupport;
 using FrostySdk;
 using IWshRuntimeLibrary;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace FrostyModManager
 {
@@ -20,7 +20,10 @@ namespace FrostyModManager
     {
         public string Name { get; set; }
         public string Path { get; set; }
-    }
+        public bool IsHidden { get; set; }
+        public bool IsEnabled => !IsHidden;
+        public Visibility LinuxVisibility => IsHidden ? Visibility.Hidden : Visibility.Visible;
+}
 
     /// <summary>
     /// Author: Stoichiom, Dyvinia
@@ -75,10 +78,12 @@ namespace FrostyModManager
             // Grabs the packs currently in the ModData folder.
             string[] modDataPacks = Directory.GetDirectories(modDataPath, "*", SearchOption.TopDirectoryOnly);
 
+            var visibility = OperatingSystemHelper.IsWine() ? Visibility.Collapsed : Visibility.Collapsed;
+
             // Adds them to the ComboBox in the window.
             foreach (string packNamePath in modDataPacks)
             {
-                modDataList.Items.Add(new Pack { Name = Path.GetFileName(packNamePath), Path = packNamePath });
+                modDataList.Items.Add(new Pack { Name = Path.GetFileName(packNamePath), Path = packNamePath, IsHidden = OperatingSystemHelper.IsWine() });
             }
         }
 

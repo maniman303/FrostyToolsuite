@@ -9,8 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -452,6 +452,8 @@ namespace FrostyModManager.Windows
 
             var games = new List<string>();
 
+            CancellationTokenSource cancelToken = new CancellationTokenSource();
+
             FrostyTaskWindow.Show("Scanning for games", "", (logger) =>
             {
                 using (RegistryKey lmKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\\WOW6432Node"))
@@ -463,8 +465,10 @@ namespace FrostyModManager.Windows
                     games.AddRange(regGames);
                 }
 
-                games.AddRange(ScanZDirectory());
-            });
+                games.AddRange(ScanZDirectory(cancelToken));
+            }, showCancelButton: true, cancelCallback: (logger) => cancelToken.Cancel());
+
+            games.Sort((x, y) => string.Compare(x, y, true) * -1);
 
             foreach (var game in games)
             {
@@ -480,11 +484,11 @@ namespace FrostyModManager.Windows
             public int Depth { get; set; }
         }
 
-        private List<string> ScanZDirectory()
+        private List<string> ScanZDirectory(CancellationTokenSource cancelToken)
         {
             var res = new List<string>();
 
-            var rootPath = "Z:\\";
+            var rootPath = "Z:\\home\\";
 
             if (!Directory.Exists(rootPath))
             {
@@ -500,6 +504,11 @@ namespace FrostyModManager.Windows
 
             while (queue.Count > 0)
             {
+                if (cancelToken.IsCancellationRequested)
+                {
+                    return res;
+                }
+
                 var item = queue.Dequeue();
 
                 if (!Directory.Exists(item.Path))

@@ -35,13 +35,13 @@ ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center"/>
-                            <Button x:Name="launchModData" Grid.Column="1" Click="launchModData_Click" ToolTip="Attempts to launch game with existing ModData">
+                            <Button x:Name="launchModData" Visibility="{Binding LinuxVisibility}" IsEnabled="{Binding IsEnabled}" Grid.Column="1" Click="launchModData_Click" ToolTip="Attempts to launch game with existing ModData">
                                 <Image Source="/FrostyModManager;component/Images/Play.png"/>
                             </Button>
                             <Button x:Name="openModData" Grid.Column="3" Click="openModData_Click" ToolTip="Open Folder">
                                 <Image Source="/FrostyModManager;component/Images/Open.png"/>
                             </Button>
-                            <Button x:Name="createShortcutToModData" Grid.Column="5" Click="createShortcutToModData_Click" ToolTip="Create shortcut to launch game with ModData">
+                            <Button x:Name="createShortcutToModData" Visibility="{Binding LinuxVisibility}" IsEnabled="{Binding IsEnabled}" Grid.Column="5" Click="createShortcutToModData_Click" ToolTip="Create shortcut to launch game with ModData">
                                 <Image Source="/FrostyModManager;component/Images/SaveAs.png"/>
                             </Button>
                             <Button x:Name="deleteModData" Grid.Column="7" Click="deleteModData_Click" ToolTip="Delete Folder">
