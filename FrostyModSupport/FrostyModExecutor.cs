@@ -2216,6 +2216,11 @@ namespace Frosty.ModSupport
 
             CopyFileIfRequired(fs.BasePath + "user.cfg", modDataPath + "user.cfg");
 
+            if (!ShouldUseHardLink() && Config.Get<bool>("EASetup", false))
+            {
+                LinkEaMods(fs.BasePath, modDataPath);
+            }
+
             // FIFA games require a fifaconfig workaround
             if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa17 || ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa18 || ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa19 || ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa20)
             {
@@ -2341,6 +2346,20 @@ namespace Frosty.ModSupport
             {
                 ExecuteProcess($"{basePath + ProfilesLibrary.ProfileName}.exe", $"-dataPath \"{modDataPath.Trim('\\')}\" {additionalArgs}");
             }
+        }
+
+        private void LinkEaMods(string gamePath, string modDataPath)
+        {
+            var eaModsPath = Path.Combine(gamePath, "EAMods");
+
+            var symLink = new SymLinkStruct(eaModsPath, modDataPath, true);
+
+            var links = new List<SymLinkStruct>
+            {
+                symLink
+            };
+
+            RunSymbolicLinkProcess(links);
         }
 
         private List<ModInfo> GenerateModInfoList(string[] modPaths, string rootPath)

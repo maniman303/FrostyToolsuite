@@ -362,25 +362,31 @@ namespace Frosty.Core.Windows
         public string CustomModsDirectory { get; set; }
 
         [Category("Manager")]
-        [DisplayName("Use HardLinks")]
-        [Description("Use HardLinks for mod installation")]
+        [DisplayName("EA Setup")]
+        [Description("Create Sym Link 'EAMods' to 'ModData/{last profile}' inside game folder for easier usage with EA App. Requires Hard Links to be disabled.")]
+        [EbxFieldMeta(EbxFieldType.Boolean)]
+        public bool EASetup { get; set; } = true;
+
+        [Category("Manager")]
+        [DisplayName("Use Hard Links")]
+        [Description("Use Hard Links for mod installation. Safer, but requires more space.")]
         [EbxFieldMeta(EbxFieldType.Boolean)]
         public bool UseHardLink { get; set; } = true;
 
         [Category("Update Checking")]
         [DisplayName("Check for Updates")]
-        [Description("Check Github for Frosty updates on startup")]
+        [Description("Check Github for Frosty updates on startup.")]
         [EbxFieldMeta(EbxFieldType.Boolean)]
-        public bool UpdateCheck { get; set; } = true;
+        public bool UpdateCheck { get; set; } = false;
 
         [Category("Update Checking")]
         [DisplayName("Check for Prerelease Updates")]
-        [Description("Check Github for Frosty Alpha and Beta updates on startup")]
+        [Description("Check Github for Frosty Alpha and Beta updates on startup.")]
         [EbxFieldMeta(EbxFieldType.Boolean)]
 #if FROSTY_ALPHA
-        public bool UpdateCheckPrerelease { get; set; } = true;
+        public bool UpdateCheckPrerelease { get; set; } = false;
 #elif FROSTY_BETA
-        public bool UpdateCheckPrerelease { get; set; } = true;
+        public bool UpdateCheckPrerelease { get; set; } = false;
 #else
         public bool UpdateCheckPrerelease { get; set; } = false;
 #endif
@@ -412,9 +418,11 @@ namespace Frosty.Core.Windows
 
             CustomModsDirectory = Config.Get<string>("CustomModsDirectory", "");
 
+            EASetup = Config.Get<bool>("EASetup", false);
+
             UseHardLink = Config.Get<bool>("UseHardLink", true);
 
-            UpdateCheck = Config.Get<bool>("UpdateCheck", true);
+            UpdateCheck = Config.Get<bool>("UpdateCheck", false);
 
             UpdateCheckPrerelease = Config.Get<bool>("UpdateCheckPrerelease", false);
 
@@ -428,6 +436,7 @@ namespace Frosty.Core.Windows
 
         public override void Save()
         {
+            Config.Add("EASetup", EASetup);
             Config.Add("UseHardLink", UseHardLink);
             Config.Add("UseDefaultProfile", RememberChoice);
             Config.Add("CommandLineArgs", CommandLineArgs, ConfigScope.Game);

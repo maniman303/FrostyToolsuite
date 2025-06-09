@@ -899,7 +899,7 @@ namespace FrostyModManager
 
             if (retCode == 0)
             {
-                var arguments = $"-dataPath \"ModData/{App.SelectedPack}\"";
+                var arguments = Config.Get<bool>("EASetup", false) ? "-dataPath EAMods" : $"-dataPath \"ModData/{App.SelectedPack}\"";
 
                 if (!string.IsNullOrWhiteSpace(additionalArgs))
                 {
@@ -910,7 +910,7 @@ namespace FrostyModManager
 
                 StringBuilder sb = new StringBuilder();
 
-                if (OperatingSystemHelper.IsWine())
+                if (OperatingSystemHelper.IsWine() && !Config.Get<bool>("EASetup", false))
                 {
                     var linuxArguments = $"WINEDLLOVERRIDES=\"winmm=n,b\" %command% {arguments}";
 
