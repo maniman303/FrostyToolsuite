@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using FrostySdk.IO;
-using System.Collections;
-using System.Runtime.InteropServices;
-using SharpSevenZip;
 using System.Linq;
+using SharpSevenZip;
 
 namespace FrostyModManager.Compression
 {

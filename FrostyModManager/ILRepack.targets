@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <!-- ILRepack -->
+    <Target Name="ILRepacker" AfterTargets="Build" Condition="'$(Configuration)|$(Platform)' == 'Release - Final|x64'">
+        <ItemGroup>
+            <InputAssemblies Include="$(OutputPath)\$(AssemblyName).exe" />
+            <InputAssemblies Include="$(OutputPath)\System.Buffers.dll" />
+            <InputAssemblies Include="$(OutputPath)\System.Memory.dll" />
+            <InputAssemblies Include="$(OutputPath)\System.Numerics.Vectors.dll" />
+            <InputAssemblies Include="$(OutputPath)\System.Runtime.CompilerServices.Unsafe.dll" />
+        </ItemGroup>
+    
+        <ILRepack
+            AllowDuplicateResources="false"
+            Parallel="true"
+            Internalize="true"
+            InputAssemblies="@(InputAssemblies)"
+            TargetKind="WinExe"
+            OutputFile="$(OutputPath)\$(AssemblyName).exe"
+        />
+    </Target>
+    <!-- /ILRepack -->
+</Project>
