@@ -1511,9 +1511,9 @@ namespace Frosty.ModSupport
                 ProcessModResources(runtimeResources);
 
                 cancelToken.ThrowIfCancellationRequested();
-                Logger.Log("Cleaning Up ModData, it can take a few minutes");
-                App.Logger.Log("Cleaning Up ModData");
-                FileLogger.Info("Cleaning Up ModData.");
+                Logger.Log("Cleaning up ModData, it can take a few minutes");
+                App.Logger.Log("Cleaning up ModData");
+                FileLogger.Info("Cleaning up ModData.");
 
                 List<SymLinkStruct> cmdArgs = new List<SymLinkStruct>();
 
@@ -1617,7 +1617,7 @@ namespace Frosty.ModSupport
                     }
                 }
 
-                FileLogger.Info("Cleaning Up ModData finished.");
+                FileLogger.Info("Cleaning up ModData finished.");
 
                 // add cas files to link
                 foreach (string catalog in fs.Catalogs)

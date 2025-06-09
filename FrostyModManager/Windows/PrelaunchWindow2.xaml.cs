@@ -501,10 +501,17 @@ namespace FrostyModManager.Windows
             }
 
             var queue = new Queue<PathItem>();
+            
+            queue.Enqueue(new PathItem { Path = rootPath, Depth = 1 });
+
+            var mountPath = "Z:\\run\\media";
+            if (Directory.Exists(mountPath))
+            {
+                queue.Enqueue(new PathItem { Path = mountPath, Depth = 10 });
+            }
+
             string[] files;
             string[] dirs;
-
-            queue.Enqueue(new PathItem { Path = rootPath, Depth = 1 });
 
             while (queue.Count > 0)
             {
