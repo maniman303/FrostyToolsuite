@@ -468,10 +468,14 @@ namespace FrostyModManager.Windows
                 games.AddRange(ScanZDirectory(cancelToken));
             }, showCancelButton: true, cancelCallback: (logger) => cancelToken.Cancel());
 
+            games = games.Select(x => x.Trim()).Distinct().ToList();
+
             games.Sort((x, y) => string.Compare(x, y, true) * -1);
 
             foreach (var game in games)
             {
+                FileLogger.Info($"Scanning found game candidate: '{game}'.");
+
                 AddGameProfile(game, out _);
             }
 
