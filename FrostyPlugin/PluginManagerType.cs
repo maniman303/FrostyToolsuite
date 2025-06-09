@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Frosty.Core
+﻿namespace Frosty.Core
 {
     /// <summary>
     /// Describes the context in which the plugin manager is loading.
@@ -24,6 +18,11 @@ namespace Frosty.Core
         /// <summary>
         /// The plugin is loading for both the editor and mod manager.
         /// </summary>
-        Both
+        Both,
+
+        /// <summary>
+        /// The plugin is loading into the mod manager.
+        /// </summary>
+        InstallOnly,
     }
 }
