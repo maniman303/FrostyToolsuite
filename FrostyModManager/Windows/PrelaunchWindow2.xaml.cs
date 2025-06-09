@@ -520,12 +520,6 @@ namespace FrostyModManager.Windows
                     continue;
                 }
 
-                var dirName = Path.GetFileName(item.Path);
-                if (!string.IsNullOrWhiteSpace(dirName) && dirName.Trim().StartsWith("$"))
-                {
-                    continue;
-                }
-
                 try
                 {
                     files = Directory.GetFiles(item.Path, "*.exe");
@@ -543,7 +537,7 @@ namespace FrostyModManager.Windows
                     }
                 }
 
-                if (item.Depth >= 50)
+                if (item.Depth >= 20)
                 {
                     continue;
                 }
@@ -553,7 +547,30 @@ namespace FrostyModManager.Windows
                     dirs = Directory.GetDirectories(item.Path).Where(d =>
                     {
                         var dirTempName = Path.GetFileName(d);
-                        return !string.IsNullOrWhiteSpace(dirTempName) && !dirTempName.Trim().StartsWith("$");
+
+                        if (string.IsNullOrWhiteSpace(dirTempName))
+                        {
+                            return false;
+                        }
+
+                        dirTempName = dirTempName.Trim().ToLower();
+
+                        if (dirTempName.StartsWith("$"))
+                        {
+                            return false;
+                        }
+
+                        if (dirTempName == "cache" || dirTempName == "config" || dirTempName == "tmp")
+                        {
+                            return false;
+                        }
+
+                        if (dirTempName.StartsWith(".") && dirTempName != ".local" && dirTempName != ".var")
+                        {
+                            return false;
+                        }
+
+                        return true;
                     }).ToArray();
                 }
                 catch
