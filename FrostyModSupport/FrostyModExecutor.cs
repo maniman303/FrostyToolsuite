@@ -1357,6 +1357,7 @@ namespace Frosty.ModSupport
             }
             else if (OperatingSystemHelper.IsWine() && !File.Exists(Path.Combine(fs.BasePath, "winmm.dll")))
             {
+                FileLogger.Info($"Forcing mod install, due to missing '{Path.Combine(fs.BasePath, "winmm.dll")}'.");
                 needsModding = true;
             }
             else
@@ -1378,6 +1379,7 @@ namespace Frosty.ModSupport
 
                 if (!needsModding && modSetup.IsHardlink != ShouldUseHardLink())
                 {
+                    FileLogger.Info($"Forcing mod install, due to not matching hard link usage.");
                     needsModding = true;
                 }
 
@@ -1388,6 +1390,7 @@ namespace Frosty.ModSupport
                 // ie. mod change or patch
                 if (!needsModding && !IsSamePatch(modDataPath + patchPath) || !oldModInfoList.SequenceEqual(currentModInfoList))
                 {
+                    FileLogger.Info($"Forcing mod install, due to outdated mod data folder.");
                     needsModding = true;
                 }
             }
@@ -2884,11 +2887,13 @@ namespace Frosty.ModSupport
 
         private void CreateSymbolicLinksStructureLinux(List<SymLinkStruct> cmdArgs)
         {
-            var batches = BatchesHelper.Split(cmdArgs, SymLinkHelper.BatchSize);
+            var adjustedCmdArgs = cmdArgs.Select(c => new SymLinkStruct(SymLinkHelper.GetRealPath(c.dest), SymLinkHelper.GetRealPath(c.src), c.isFolder)).ToList();
+
+            var batches = BatchesHelper.Split(adjustedCmdArgs, SymLinkHelper.BatchSize);
 
             foreach (var batch in batches)
             {
-                var symTasks = batch.Select(c => Task.Run(() => SymLinkHelper.CreateSymlinkLinux(c.src, c.dest))).ToArray();
+                var symTasks = batch.Select(c => Task.Run(() => SymLinkHelper.CreateSymlinkLinux(c.src, c.dest, false))).ToArray();
 
                 try
                 {

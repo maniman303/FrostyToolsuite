@@ -49,6 +49,13 @@ namespace Frosty.Core
             };
         }
 
+        public void Log(string text)
+        {
+            text = text.Trim();
+
+            progressReporter.Report(text);
+        }
+
         public void Log(string text, params object[] vars)
         {
             text = text.Trim();

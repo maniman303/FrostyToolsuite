@@ -435,7 +435,9 @@ namespace FrostyModManager.Windows
         private async void LaunchConfigButton_Click(object sender, RoutedEventArgs e)
         {
             if (ConfigList.SelectedIndex == -1)
+            { 
                 return;
+            }
 
             if (ConfigList.SelectedItem is FrostyConfiguration config)
             {
@@ -443,19 +445,24 @@ namespace FrostyModManager.Windows
                 await Task.Delay(1);
                 Close();
             }
+
             ConfigList.SelectedIndex = -1;
         }
 
-        private void ScanForGamesButton_Click(object sender, RoutedEventArgs e)
+        private async void ScanForGamesButton_Click(object sender, RoutedEventArgs e)
         {
             TryShowFlatpakMessage();
 
             var games = new List<string>();
 
+            await Task.Delay(1);
+
             CancellationTokenSource cancelToken = new CancellationTokenSource();
 
             FrostyTaskWindow.Show("Scanning for games", "", (logger) =>
             {
+                logger.Log("Scanning registry...");
+
                 using (RegistryKey lmKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\\WOW6432Node"))
                 {
                     int totalCount = 0;
@@ -463,6 +470,11 @@ namespace FrostyModManager.Windows
                     var regGames = IterateSubKeys(lmKey, ref totalCount);
 
                     games.AddRange(regGames);
+                }
+
+                if (OperatingSystemHelper.IsWine())
+                {
+                    logger.Log("Scanning Z: drive...");
                 }
 
                 games.AddRange(ScanZDirectory(cancelToken));

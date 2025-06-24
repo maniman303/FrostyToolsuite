@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -98,7 +99,6 @@ namespace Frosty.Controls
             SizeToContent = SizeToContent.Height;
 
             MaxWidth = 410;
-            //MinWidth = 175;
             MinHeight = 175;
 
             Window win = Application.Current.MainWindow;
@@ -139,7 +139,9 @@ namespace Frosty.Controls
             MessageBoxResult msgBoxResult = MessageBoxResult.None;
             TextAlignment alignment = TextAlignment.Center;
             if (text.Contains("\r\n"))
+            {
                 alignment = TextAlignment.Left;
+            }
 
             if (System.Threading.Thread.CurrentThread.GetApartmentState() != System.Threading.ApartmentState.STA)
             {
@@ -164,7 +166,9 @@ namespace Frosty.Controls
                 });
 
                 while (!result)
+                {
                     System.Threading.Thread.Sleep(10);
+                }
 
                 rememberAction = rememberActionResult;
             }
@@ -182,6 +186,12 @@ namespace Frosty.Controls
                 window.ShowDialog();
                 msgBoxResult = window.MessageBoxResult;
             }
+
+            //Application.Current.MainWindow.Height += 2;
+
+            //Thread.Sleep(150);
+
+            //Application.Current.MainWindow.Height -= 2;
 
             return msgBoxResult;
         }

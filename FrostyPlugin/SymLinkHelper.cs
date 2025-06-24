@@ -260,7 +260,7 @@ namespace Frosty.Core
             return true;
         }
 
-        public static void CreateSymlinkLinux(string source, string destination)
+        public static void CreateSymlinkLinux(string source, string destination, bool checkPath = true)
         {
             if (string.IsNullOrWhiteSpace(source) ||  string.IsNullOrWhiteSpace(destination))
             {
@@ -281,8 +281,8 @@ namespace Frosty.Core
                 return;
             }
 
-            var sourceLinux = GetLinuxPath(source);
-            var destinationLinux = GetLinuxPath(destination);
+            var sourceLinux = GetLinuxPath(source, checkPath);
+            var destinationLinux = GetLinuxPath(destination, checkPath);
 
             var proc = new Process
             {
@@ -422,10 +422,10 @@ namespace Frosty.Core
             return false;
         }
 
-        private static string GetLinuxPath(string path)
+        private static string GetLinuxPath(string path, bool checkPath = true)
         {
             var linuxPath = string.Empty;
-            var realPath = GetRealPath(path);
+            var realPath = checkPath ? GetRealPath(path) : path;
 
             var proc = new Process
             {
@@ -475,7 +475,7 @@ namespace Frosty.Core
             return path;
         }
 
-        private static string GetRealPath(string path)
+        public static string GetRealPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -499,23 +499,36 @@ namespace Frosty.Core
 
             string realName = string.Empty;
 
-            try
+            for (int i = 0; i < 10; i++)
             {
-                if (Directory.Exists(parent))
+                try
                 {
-                    realName = Directory.GetFiles(parent, name).FirstOrDefault();
-
-                    if (string.IsNullOrEmpty(realName))
+                    if (Directory.Exists(parent))
                     {
-                        realName = Directory.GetDirectories(parent, name).FirstOrDefault();
+                        if (Directory.Exists(absolutePath))
+                        {
+                            realName = Directory.GetDirectories(parent, name).FirstOrDefault();
+                        }
+                        else if (File.Exists(absolutePath))
+                        {
+                            realName = Directory.GetFiles(parent, name).FirstOrDefault();
+                        }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                FileLogger.Info($"Crashed when visiting directory '{parent}' and looking for '{name}'.");
 
-                throw ex;
+                    break;
+                }
+                catch (System.IO.IOException iex)
+                {
+                    realName = string.Empty;
+
+                    FileLogger.Info($"Could not access '{parent}' when looking for '{name}'. Details: {iex}");
+                }
+                catch (Exception ex)
+                {
+                    FileLogger.Info($"Crashed when visiting directory '{parent}' and looking for '{name}'.");
+
+                    throw ex;
+                }
             }
 
             if (string.IsNullOrEmpty(realName))
