@@ -10,6 +10,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -21,11 +22,30 @@ namespace FrostyModManager.Windows
     /// </summary>
     public partial class SplashWindow : Window
     {
+        private bool isRefreshed = false;
+
         public SplashWindow()
         {
             InitializeComponent();
             versionTextBlock.Text = App.Version;
             TaskbarItemInfo = new System.Windows.Shell.TaskbarItemInfo();
+            ContentRendered += RefreshFix;
+        }
+
+        private void RefreshFix(object sender, EventArgs e)
+        {
+            if (isRefreshed || Application.Current.MainWindow != this)
+            {
+                return;
+            }
+
+            isRefreshed = true;
+
+            Application.Current.MainWindow.Height += 2;
+
+            Thread.Sleep(150);
+
+            Application.Current.MainWindow.Height -= 2;
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -152,7 +172,10 @@ namespace FrostyModManager.Windows
         private BitmapImage LoadBanner(byte[] banner)
         {
             if (banner == null||banner.Length == 0)
+            {
                 return null;
+            }
+
             BitmapImage bmp = new BitmapImage();
             using (MemoryStream ms = new MemoryStream(banner))
             {
@@ -163,7 +186,9 @@ namespace FrostyModManager.Windows
                 bmp.StreamSource = ms;
                 bmp.EndInit();
             }
+
             bmp.Freeze();
+            
             return bmp;
         }
 
