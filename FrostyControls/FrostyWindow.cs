@@ -400,11 +400,11 @@ namespace Frosty.Controls
 
             isRefreshed = true;
 
-            Application.Current.MainWindow.Height += 2;
+            Application.Current.MainWindow.Height += 1;
 
             Thread.Sleep(150);
 
-            Application.Current.MainWindow.Height -= 2;
+            Application.Current.MainWindow.Height -= 1;
         }
 
         public override void OnApplyTemplate()
