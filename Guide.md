@@ -2,13 +2,18 @@
 
 1.Download the binaries from the [releases section](https://github.com/Twig6943/FrostyToolsuiteGW1Linux/releases)
 
-2.Add the following dlloverrides to your wineprefix via `winecfg` :
+2.Add the following dlloverrides to your wineprefix via `winecfg` & environment variable :
 
-
-```
+###### Winecfg
+```sh
 winmm
 ```
 
+###### Environment variable
+
+```sh
+WINEDLLOVERRIDES=winmm=n,b;
+```
 
 (Should be set to `native,builtin`)
 
