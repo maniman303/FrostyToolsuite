@@ -4,12 +4,12 @@
 
 2.Add the following dlloverrides to your wineprefix via `winecfg` & environment variable :
 
-###### Winecfg
+### Winecfg
 ```sh
 winmm
 ```
 
-###### Environment variable
+### Environment variable
 
 ```sh
 WINEDLLOVERRIDES=winmm=n,b;
