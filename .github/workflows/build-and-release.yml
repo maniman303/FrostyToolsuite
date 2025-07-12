@@ -1,6 +1,11 @@
 name: Build and Release Frosty Linux
 
 on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag for release (e.g., v1.0.6.3.r)'
+        required: true
   push:
     tags:
       - 'v*'  # Trigger only on version tags like v1.0, v1.2.3 etc.
