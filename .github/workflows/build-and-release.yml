@@ -1,0 +1,41 @@
+name: Build and Release Frosty Linux
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger only on version tags like v1.0, v1.2.3 etc.
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    env:
+      SOLUTION_PATH: 'FrostyEditor/FrostyEditor.sln'
+      BUILD_CONFIGURATION: 'Release - Final'
+      BUILD_PLATFORM: 'x64'
+      PROJECT_OUTPUT_PATH: 'FrostyModManager\bin\Release\Final'
+      ZIP_NAME: 'FrostyModManager.zip'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Restore NuGet packages
+      run: nuget restore $env:SOLUTION_PATH
+
+    - name: Build with MSBuild
+      run: msbuild $env:SOLUTION_PATH /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform="$env:BUILD_PLATFORM"
+
+    - name: Zip output
+      run: |
+        Compress-Archive -Path "$env:PROJECT_OUTPUT_PATH\*" -DestinationPath $env:ZIP_NAME
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ${{ env.ZIP_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
