@@ -2105,7 +2105,7 @@ namespace Frosty.ModSupport
                     using (DbReader reader = new DbReader(new FileStream(layoutPath, FileMode.Open, FileAccess.Read), fs.CreateDeobfuscator()))
                         layout = reader.ReadDbObject();
 
-                    FileLogger.Info($"Modify layout.toc at '{layoutPath}'");
+                    FileLogger.Info($"Read layout.toc at '{layoutPath}'");
 
                     // write out new manifest
                     if (ProfilesLibrary.DataVersion == (int)ProfileVersion.StarWarsBattlefrontII || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5)
@@ -2153,7 +2153,9 @@ namespace Frosty.ModSupport
 
                     string layoutLocation = modDataPath + patchPath + "/layout.toc";
                     if (ProfilesLibrary.DataVersion == (int)ProfileVersion.StarWarsBattlefrontII || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5)
+                    {
                         layoutLocation = modDataPath + "Data/layout.toc";
+                    }
 
                     FileLogger.Info($"Write layout.toc at '{layoutLocation}'");
 

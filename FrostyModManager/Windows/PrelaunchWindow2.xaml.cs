@@ -475,9 +475,9 @@ namespace FrostyModManager.Windows
                 if (OperatingSystemHelper.IsWine())
                 {
                     logger.Log("Scanning Z: drive...");
-                }
 
-                games.AddRange(ScanZDirectory(cancelToken));
+                    games.AddRange(ScanZDirectory(cancelToken));
+                }
             }, showCancelButton: true, cancelCallback: (logger) => cancelToken.Cancel());
 
             games = games.Select(x => x.Trim()).Distinct().ToList();
@@ -561,36 +561,11 @@ namespace FrostyModManager.Windows
                     continue;
                 }
 
+                dirs = new string[0];
+
                 try
                 {
-                    dirs = Directory.GetDirectories(item.Path).Where(d =>
-                    {
-                        var dirTempName = Path.GetFileName(d);
-
-                        if (string.IsNullOrWhiteSpace(dirTempName))
-                        {
-                            return false;
-                        }
-
-                        dirTempName = dirTempName.Trim().ToLower();
-
-                        if (dirTempName.StartsWith("$"))
-                        {
-                            return false;
-                        }
-
-                        if (dirTempName == "cache" || dirTempName == "config" || dirTempName == "tmp")
-                        {
-                            return false;
-                        }
-
-                        if (dirTempName.StartsWith(".") && dirTempName != ".local" && dirTempName != ".var")
-                        {
-                            return false;
-                        }
-
-                        return true;
-                    }).ToArray();
+                    dirs = Directory.GetDirectories(item.Path).Where(d => IsDirectoryScanValid(d)).ToArray();
                 }
                 catch
                 {
@@ -599,11 +574,59 @@ namespace FrostyModManager.Windows
 
                 foreach (var dir in dirs)
                 {
+
+
                     queue.Enqueue(new PathItem { Path = dir, Depth = item.Depth + 1 });
                 }
             }
 
             return res;
+        }
+
+        private static bool IsDirectoryScanValid(string dir)
+        {
+            var dirTempName = Path.GetFileName(dir);
+
+            if (string.IsNullOrWhiteSpace(dirTempName))
+            {
+                return false;
+            }
+
+            dirTempName = dirTempName.Trim().ToLower();
+
+            if (dirTempName.StartsWith("$"))
+            {
+                return false;
+            }
+
+            if (dirTempName == "cache" || dirTempName == "config" || dirTempName == "tmp")
+            {
+                return false;
+            }
+
+            if (dirTempName.StartsWith(".") && dirTempName != ".local" && dirTempName != ".var")
+            {
+                return false;
+            }
+
+            if (dirTempName == "pfx")
+            {
+                try
+                {
+                    var pfxDirs = Directory.GetDirectories(dir);
+
+                    if (pfxDirs.Any(p => Path.GetFileName(p).Trim().ToLower() == "pfx"))
+                    {
+                        return false;
+                    }
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private List<string> IterateSubKeys(RegistryKey subKey, ref int totalCount)
