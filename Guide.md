@@ -12,7 +12,7 @@ winmm
 ### Environment variable
 
 ```sh
-WINEDLLOVERRIDES=winmm=n,b;
+WINEDLLOVERRIDES=winmm=n,b
 ```
 
 (Should be set to `native,builtin`)
