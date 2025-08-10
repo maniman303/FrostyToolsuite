@@ -1,54 +1,52 @@
-name: Build Frosty Mod Manager (Windows)
+name: Build and Release Frosty Linux
 
 on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag for release (e.g., v1.0.6.3.r)'
+        required: true
+        default: 'v1.0.6.3'
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch: # Allows manual triggering of the workflow
+    tags:
+      - 'v*'  # Trigger only on version tags like v1.0, v1.2.3 etc.
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: windows-latest
 
+    env:
+      SOLUTION_PATH: 'FrostyEditor/FrostyEditor.sln'
+      BUILD_CONFIGURATION: 'Release - Final'
+      BUILD_PLATFORM: 'x64'
+      PROJECT_OUTPUT_PATH: 'FrostyModManager\bin\Release\Final'
+      ZIP_NAME: 'FrostyModManager.zip'
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-    - name: Install Chocolatey (if not already installed)
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Restore NuGet packages
+      run: nuget restore $env:SOLUTION_PATH
+
+    - name: Build with MSBuild
+      run: msbuild $env:SOLUTION_PATH /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform="$env:BUILD_PLATFORM"
+
+    - name: Zip output
       run: |
-        Set-ExecutionPolicy Bypass -Scope Process -Force
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
-        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        Compress-Archive -Path "$env:PROJECT_OUTPUT_PATH\*" -DestinationPath $env:ZIP_NAME
 
-    - name: Install Visual Studio Build Tools with required workloads
-      run: |
-        choco install visualstudio2022buildtools -y --package-parameters `
-          "--add Microsoft.VisualStudio.Workload.ManagedDesktop `
-          --add Microsoft.VisualStudio.Workload.NativeDesktop `
-          --includeRecommended --includeOptional"
-
-    - name: Set up .NET SDK
-      uses: actions/setup-dotnet@v3
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
       with:
-        dotnet-version: '4.8.1' # Adjust this to the required .NET version for FMM
-
-    - name: Restore dependencies
-      run: dotnet restore
-
-    - name: Build the project
-      run: dotnet build --configuration Release
-
-    - name: Run tests (if any)
-      run: dotnet test
-
-    - name: Publish the project
-      run: dotnet publish -c Release -o ./publish
-
-    - name: Archive build artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: frosty-mod-manager
-        path: ./publish
+        name: Release ${{ github.event.inputs.tag_name || github.ref_name }}
+        tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+        files: ${{ env.ZIP_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
