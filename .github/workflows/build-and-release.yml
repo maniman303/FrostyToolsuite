@@ -22,8 +22,10 @@ jobs:
       SOLUTION_PATH: 'FrostyEditor/FrostyEditor.sln'
       BUILD_CONFIGURATION: 'Release - Final'
       BUILD_PLATFORM: 'x64'
-      PROJECT_OUTPUT_PATH: 'FrostyModManager\bin\Release\Final'
-      ZIP_NAME: 'FrostyModManager.zip'
+      MODMANAGER_OUTPUT_PATH: 'FrostyModManager/bin/Release/Final'
+      EDITOR_OUTPUT_PATH: 'FrostyEditor/bin/Release/Final'
+      MODMANAGER_ZIP: 'FrostyModManager.zip'
+      EDITOR_ZIP: 'FrostyEditor.zip'
 
     steps:
     - name: Checkout code
@@ -36,17 +38,23 @@ jobs:
       run: nuget restore $env:SOLUTION_PATH
 
     - name: Build with MSBuild
-      run: msbuild $env:SOLUTION_PATH /p:Configuration=$env:BUILD_CONFIGURATION /p:Platform="$env:BUILD_PLATFORM"
+      run: msbuild $env:SOLUTION_PATH /p:Configuration="$env:BUILD_CONFIGURATION" /p:Platform="$env:BUILD_PLATFORM"
 
-    - name: Zip output
+    - name: Zip FrostyModManager
       run: |
-        Compress-Archive -Path "$env:PROJECT_OUTPUT_PATH\*" -DestinationPath $env:ZIP_NAME
+        Compress-Archive -Path "$env:MODMANAGER_OUTPUT_PATH\*" -DestinationPath $env:MODMANAGER_ZIP
+
+    - name: Zip FrostyEditor
+      run: |
+        Compress-Archive -Path "$env:EDITOR_OUTPUT_PATH\*" -DestinationPath $env:EDITOR_ZIP
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         name: Release ${{ github.event.inputs.tag_name || github.ref_name }}
         tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
-        files: ${{ env.ZIP_NAME }}
+        files: |
+          ${{ env.MODMANAGER_ZIP }}
+          ${{ env.EDITOR_ZIP }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
