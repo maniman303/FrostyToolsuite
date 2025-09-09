@@ -1360,6 +1360,11 @@ namespace Frosty.ModSupport
                 FileLogger.Info($"Forcing mod install, due to missing '{Path.Combine(fs.BasePath, "winmm.dll")}'.");
                 needsModding = true;
             }
+            else if (OperatingSystemHelper.IsWine() && !File.Exists(Path.Combine(fs.BasePath, "dinput8.dll")))
+            {
+                FileLogger.Info($"Forcing mod install, due to missing '{Path.Combine(fs.BasePath, "dinput8.dll")}'.");
+                needsModding = true;
+            }
             else
             {
                 FileLogger.Info("Reading mods.json");
@@ -2211,6 +2216,7 @@ namespace Frosty.ModSupport
                 if (OperatingSystemHelper.IsWine())
                 {
                     CopyFileIfRequired("ThirdParty/winmm.dll", fs.BasePath + "winmm.dll");
+                    CopyFileIfRequired("ThirdParty/dinput8.dll", fs.BasePath + "dinput8.dll");
                     CopyFileIfRequired("ThirdParty/crypthook.dll", fs.BasePath + "crypthook.dll");
                 }
                 else

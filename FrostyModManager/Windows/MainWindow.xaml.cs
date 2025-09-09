@@ -902,7 +902,7 @@ namespace FrostyModManager
 
                 if (OperatingSystemHelper.IsWine() && !Config.Get<bool>("EASetup", false))
                 {
-                    var linuxArguments = $"WINEDLLOVERRIDES=\"winmm=n,b\" %command% {arguments}";
+                    var linuxArguments = $"WINEDLLOVERRIDES=\"dinput8=n,b\" %command% {arguments}";
 
                     clipBoardArgs = linuxArguments;
 
