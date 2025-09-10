@@ -2486,7 +2486,7 @@ namespace FrostyModManager
                 {
                     menuExtItem.Command = new RelayCommand(param =>
                     {
-                        FrostyMessageBox.Show("Warning:\r\nBetterInitFs will modify vanilla game files. It's the intended behavior of this plugin.\r\n\r\nAfter mod uninstallation, you might have to repair game files in your launcher, otherwise it might not launch.", "Frosty Mod Manager");
+                        FrostyMessageBox.Show("Warning:\r\nBetterInitFs will modify vanilla game files. It's the intended behavior of this plugin.\r\n\r\nAfter full mods uninstallation, you might have to repair game files in your launcher, otherwise the game might not launch.", "Frosty Mod Manager");
                         menuExtension.MenuItemClicked.Execute(param);
                     });
                 }
