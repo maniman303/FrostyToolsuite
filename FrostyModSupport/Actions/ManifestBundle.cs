@@ -4,10 +4,13 @@ using FrostySdk.IO;
 using FrostySdk.Managers;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+
+#if FROSTY_DEVELOPER
+    using System.Diagnostics;
+#endif
 
 namespace Frosty.ModSupport
 {
@@ -20,9 +23,12 @@ namespace Frosty.ModSupport
             public List<CasFileEntry> FileInfos { get; } = new List<CasFileEntry>();
 
             public Exception Exception { get; private set; }
+            public List<ModBundleInfo> Bundles { get; private set; }
 
             public ManifestBundleAction(List<ModBundleInfo> bundles, FrostyModExecutor parent, CancellationToken cancelToken)
             {
+                Bundles = bundles;
+
                 try
                 {
                     FileSystem fs = parent.fs;

@@ -1412,7 +1412,7 @@ namespace Frosty.ModSupport
                     FileLogger.Info("Reseting ModData is not needed");
                     newInstallation = true;
                 }
-                else if (ShouldCleanModDir(modDataPath))
+                else if (ShouldCleanModDir(modDataPath) || OperatingSystemHelper.IsWine())
                 {
                     Logger.Log("Reseting ModData, it can take a few minutes");
                     FileLogger.Info($"Reseting ModData at '{modDataPath}'.");
@@ -1890,6 +1890,13 @@ namespace Frosty.ModSupport
                             // if any of the threads caused an exception, throw it to the global handler
                             // as the game data is now in an inconsistent state
                             FileLogger.Info("Adding manifests for SWBF2 in parallel resultet in an exception");
+
+                            var catalog = tasks.FirstOrDefault(p => p.Value == action.Bundles).Key;
+
+                            if (catalog != null)
+                            {
+                                FileLogger.Info($"SWBF2 manifests failed for catalog '{catalog}'");
+                            }
 
                             throw action.Exception;
                         }
