@@ -2473,12 +2473,25 @@ namespace FrostyModManager
                     }
                 }
 
+                var menuItemName = menuExtension.MenuItemName ?? string.Empty;
+
                 MenuItem menuExtItem = new MenuItem
                 {
-                    Header = menuExtension.MenuItemName,
+                    Header = menuItemName,
                     Icon = new Image() { Source = menuExtension.Icon },
                     Command = menuExtension.MenuItemClicked
                 };
+
+                if (menuItemName.Trim().ToLower() == "betterinitfs")
+                {
+                    menuExtItem.Command = new RelayCommand(param =>
+                    {
+                        FrostyMessageBox.Show("Warning:\r\nBetterInitFs will modify vanilla game files. It's the intended behavior of this plugin.\r\n\r\nAfter mod uninstallation, you might have to repair game files in your launcher, otherwise it might not launch.", "Frosty Mod Manager");
+                        menuExtension.MenuItemClicked.Execute(param);
+                    });
+                }
+
+                
                 foundMenuItem.Items.Add(menuExtItem);
             }
         }
