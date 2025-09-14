@@ -2087,7 +2087,7 @@ namespace Frosty.ModSupport
 
                 if (ProfilesLibrary.DataVersion == (int)ProfileVersion.DragonAgeInquisition || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield4 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeed || ProfilesLibrary.DataVersion == (int)ProfileVersion.PlantsVsZombiesGardenWarfare2 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeedRivals)
                 {
-                    FileLogger.Info($"Modify layout.toc at '{fs.BasePath + patchPath + "/layout.toc"}'");
+                    FileLogger.Info($"Modify layout.toc of '{fs.BasePath + patchPath + "/layout.toc"}' at '{modDataPath + patchPath + "/layout.toc"}'");
                     // modify layout.toc for any new superbundles added
                     DbObject layout = null;
                     using (DbReader reader = new DbReader(new FileStream(fs.BasePath + patchPath + "/layout.toc", FileMode.Open, FileAccess.Read), fs.CreateDeobfuscator()))
@@ -2902,13 +2902,13 @@ namespace Frosty.ModSupport
 
         private void CreateSymbolicLinksStructureLinux(List<SymLinkStruct> cmdArgs)
         {
-            var adjustedCmdArgs = cmdArgs.Select(c => new SymLinkStruct(SymLinkHelper.GetRealPath(c.dest), SymLinkHelper.GetRealPath(c.src), c.isFolder)).ToList();
+            var adjustedCmdArgs = cmdArgs.Select(c => new SymLinkStruct(c.dest, c.src, c.isFolder)).ToList();
 
             var batches = BatchesHelper.Split(adjustedCmdArgs, SymLinkHelper.BatchSize);
 
             foreach (var batch in batches)
             {
-                var symTasks = batch.Select(c => Task.Run(() => SymLinkHelper.CreateSymlinkLinux(c.src, c.dest, false))).ToArray();
+                var symTasks = batch.Select(c => Task.Run(() => SymLinkHelper.CreateSymlinkLinux(c.src, c.dest))).ToArray();
 
                 try
                 {

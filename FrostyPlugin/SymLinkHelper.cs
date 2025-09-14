@@ -1,30 +1,28 @@
-﻿using System.Runtime.InteropServices;
-using System;
-using System.IO;
-using FrostyModManager;
-using System.Diagnostics;
-using System.Threading;
-using System.Linq;
+﻿using FrostyModManager;
 using Microsoft.Win32;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Frosty.Core
 {
     public static class SymLinkHelper
     {
-        public const int BatchSize = 8;
+        private static IntPtr _symlinkModule = IntPtr.Zero;
+        private static ConvertWindowsPathDelegate _convertWindowsPathDelegate;
+        private static IsWindowsPathSymlinkDelegate _isWindowsPathSymlinkDelegate;
+        private static DeleteWindowsPathDelegate _deleteWindowsPathDelegate;
+        private static CreateWindowsSymlinkDelegate _createWindowsSymlinkDelegate;
 
-        private const string linuxTemp = "linux_temp";
+        public const int BatchSize = 8;
 
         private const string registryPath = "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Session Manager\\Environment";
         private const string envVarName = "PATHEXT";
 
-        private const int waitLoops = 33;
-        private const int waitTime = 6;
-
-        private const string symlinkBin = "./ThirdParty/wine-symlink-helper.exe.so";
-
         private static bool _areHardLinksSupported = false;
-
         public static bool AreHardLinksSupported => _areHardLinksSupported;
 
         private static bool _areSymLinksLinuxSupported = false;
@@ -33,12 +31,6 @@ namespace Frosty.Core
         public static void Initialize(string modPath)
         {
             TestHardLinks(modPath);
-
-            if (!OperatingSystemHelper.IsWine(false))
-            {
-                _areSymLinksLinuxSupported = false;
-                return;
-            }
 
             if (!UpdateRegistry())
             {
@@ -54,42 +46,63 @@ namespace Frosty.Core
                 return;
             }
 
-            if (!File.Exists(symlinkBin))
+            if (!InitializeSymlinksLibrary())
             {
-                FileLogger.Info($"Missing file '{symlinkBin}'");
+                FileLogger.Info("Could not initialize symlink library.");
                 _areSymLinksLinuxSupported = false;
                 return;
             }
 
             _areSymLinksLinuxSupported = true;
+        }
 
-            var tempFile = Path.Combine(modPath, linuxTemp);
-
-            try
+        private static bool InitializeSymlinksLibrary()
+        {
+            _symlinkModule = SafeLoadLibrary("ThirdParty/wine-symlink.dll.so");
+            if (_symlinkModule == IntPtr.Zero)
             {
-                if (!File.Exists(tempFile))
-                {
-                    File.Create(tempFile).Close();
-                }
-            }
-            catch (Exception ex)
-            {
-                FileLogger.Info($"Exception when testing symbolic links. Details: {ex.Message}");
-                _areSymLinksLinuxSupported = false;
-                return;
+                int errorCode = Marshal.GetLastWin32Error();
+                FileLogger.Info($"Failed to load wine-symlink.dll.so with error code {errorCode}.");
+                return false;
             }
 
-            try
+            IntPtr pAddressOfFunctionToCall = GetProcAddress(_symlinkModule, "ConvertWindowsPath");
+            if (pAddressOfFunctionToCall == IntPtr.Zero)
             {
-                IsSymbolicLink(tempFile);
-            }
-            catch (Exception ex)
-            {
-                FileLogger.Info($"Failed to test symbolic link initialization. Reason: {ex.Message}");
-                _areSymLinksLinuxSupported = false;
+                FileLogger.Info("Failed to find ConvertWindowsPath in wine-symlink.dll.so.");
+                return false;
             }
 
-            File.Delete(tempFile);
+            _convertWindowsPathDelegate = Marshal.GetDelegateForFunctionPointer<ConvertWindowsPathDelegate>(pAddressOfFunctionToCall);
+
+            pAddressOfFunctionToCall = GetProcAddress(_symlinkModule, "IsWindowsPathSymlink");
+            if (pAddressOfFunctionToCall == IntPtr.Zero)
+            {
+                FileLogger.Info("Failed to find IsWindowsPathSymlink in wine-symlink.dll.so.");
+                return false;
+            }
+
+            _isWindowsPathSymlinkDelegate = Marshal.GetDelegateForFunctionPointer<IsWindowsPathSymlinkDelegate>(pAddressOfFunctionToCall);
+
+            pAddressOfFunctionToCall = GetProcAddress(_symlinkModule, "DeleteWindowsPath");
+            if (pAddressOfFunctionToCall == IntPtr.Zero)
+            {
+                FileLogger.Info("Failed to find DeleteWindowsPath in wine-symlink.dll.so.");
+                return false;
+            }
+
+            _deleteWindowsPathDelegate = Marshal.GetDelegateForFunctionPointer<DeleteWindowsPathDelegate>(pAddressOfFunctionToCall);
+
+            pAddressOfFunctionToCall = GetProcAddress(_symlinkModule, "CreateWindowsSymlink");
+            if (pAddressOfFunctionToCall == IntPtr.Zero)
+            {
+                FileLogger.Info("Failed to find CreateWindowsSymlink in wine-symlink.dll.so.");
+                return false;
+            }
+
+            _createWindowsSymlinkDelegate = Marshal.GetDelegateForFunctionPointer<CreateWindowsSymlinkDelegate>(pAddressOfFunctionToCall);
+
+            return true;
         }
 
         public static void DeleteDirectorySafe(string path)
@@ -100,52 +113,18 @@ namespace Frosty.Core
                 return;
             }
 
-            path = Path.GetFullPath(path);
-
-            if (!OperatingSystemHelper.IsWine() || !_areSymLinksLinuxSupported)
+            if (!_areSymLinksLinuxSupported)
             {
                 Directory.Delete(path, true);
                 return;
             }
 
-            var linuxPath = GetLinuxPath(path);
-            var proc = new Process
+            if (!_deleteWindowsPathDelegate(path))
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = symlinkBin,
-                    Arguments = $"-r \"{linuxPath}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
+                FileLogger.Info($"Could not safely remove directory '{path}'.");
 
-            proc.Start();
-            
-            try
-            {
-                proc.WaitForExit();
+                throw new Exception($"Could not safely remove directory '{path}'.");
             }
-            catch
-            {
-                FileLogger.Info("Process finished early on directory delete.");
-            }
-
-            proc.Close();
-
-            for (int i = 0; i < waitLoops; i++)
-            {
-                if (!Directory.Exists(path))
-                {
-                    return;
-                }
-
-                Thread.Sleep(waitTime);
-            }
-
-            FileLogger.Info($"Could not determine if directory '{path}' was removed.");
-
-            throw new Exception($"Could not determine if directory '{path}' was removed.");
         }
 
         public static void DeleteFileSafe(string path)
@@ -155,182 +134,25 @@ namespace Frosty.Core
                 return;
             }
 
-            if (!OperatingSystemHelper.IsWine() || !_areSymLinksLinuxSupported)
+            if (!_areSymLinksLinuxSupported)
             {
                 File.Delete(path);
                 return;
             }
 
-            var linuxPath = GetLinuxPath(path);
-            var proc = new Process
+            if (!_deleteWindowsPathDelegate(path))
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = symlinkBin,
-                    Arguments = $"-r \"{linuxPath}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
+                FileLogger.Info($"Could not safely remove file '{path}'.");
 
-            proc.Start();
-
-            try
-            {
-                proc.WaitForExit();
+                throw new Exception($"Could not safely remove file '{path}'.");
             }
-            catch
-            {
-                FileLogger.Info("Process finished early on file delete.");
-            }
-
-            proc.Close();
-
-            for (int i = 0; i < waitLoops; i++)
-            {
-                if (!File.Exists(path))
-                {
-                    return;
-                }
-
-                Thread.Sleep(waitTime);
-            }
-
-            FileLogger.Info($"Could not determine if file '{path}' was removed.");
-
-            throw new Exception($"Could not determine if file '{path}' was removed.");
-        }
-
-        public static bool DoesDirectoryContainSymLinks(string path)
-        {
-            if (!Directory.Exists(path) || !_areSymLinksLinuxSupported)
-            {
-                return false;
-            }
-
-            path = CleanPath(Path.GetFullPath(path));
-            var linuxPath = GetLinuxPath(path);
-
-            var proc = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = symlinkBin,
-                    Arguments = $"-s \"{linuxPath}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            proc.Start();
-
-            try
-            {
-                proc.WaitForExit();
-            }
-            catch
-            {
-                FileLogger.Info("Process finished early on directory scan.");
-            }
-
-            int exitCode;
-
-            try
-            {
-                exitCode = proc.ExitCode;
-            }
-            catch
-            {
-                FileLogger.Info("Could not retrieve exit code for directory scan.");
-                throw new Exception("Could not retrieve exit code for directory scan.");
-            }
-
-            proc.Close();
-
-            if (exitCode < 0)
-            {
-                throw new Exception("Could not determine if directory has symbolic links.");
-            }
-
-            if (exitCode == 0)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        public static void CreateSymlinkLinux(string source, string destination, bool checkPath = true)
-        {
-            if (string.IsNullOrWhiteSpace(source) ||  string.IsNullOrWhiteSpace(destination))
-            {
-                FileLogger.Info($"Symbolic Link aborted. Invalid source '{source}' or destination '{destination}'.");
-                return;
-            }
-
-            var isDirectory = Directory.Exists(source);
-
-            if (!isDirectory && !File.Exists(source))
-            {
-                FileLogger.Info($"Symbolic Link aborted. Source '{source}' does not exists.");
-                return;
-            }
-
-            if (!_areSymLinksLinuxSupported)
-            {
-                return;
-            }
-
-            var sourceLinux = GetLinuxPath(source, checkPath);
-            var destinationLinux = GetLinuxPath(destination, checkPath);
-
-            var proc = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = symlinkBin,
-                    Arguments = $"-c \"{sourceLinux}\" \"{destinationLinux}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            proc.Start();
-            
-            try
-            {
-                proc.WaitForExit();
-            }
-            catch
-            {
-                FileLogger.Info("Process finished early on symlink creation.");
-            }
-
-            proc.Close();
-
-            for (int i = 0; i < waitLoops; i++)
-            {
-                if (isDirectory && Directory.Exists(destination))
-                {
-                    return;
-                }
-                else if (!isDirectory && File.Exists(destination))
-                {
-                    return;
-                }
-
-                Thread.Sleep(waitTime);
-            }
-
-            FileLogger.Info($"Could not determine if sym link was created for source '{source}' and destination '{destination}'.");
-            throw new Exception($"Could not determine if sym link was created for source '{source}' and destination '{destination}'.");
         }
 
         public static bool IsSymbolicLink(string path)
         {
-            if (OperatingSystemHelper.IsWine())
+            if (_areSymLinksLinuxSupported)
             {
-                return IsSymbolicLinkLinux(path);
+                return _isWindowsPathSymlinkDelegate(path);
             }
 
             var isDirectory = Directory.Exists(path);
@@ -356,189 +178,86 @@ namespace Frosty.Core
             return (attributes & FileAttributes.ReparsePoint) != 0;
         }
 
-        private static bool IsSymbolicLinkLinux(string path)
+        public static bool DoesDirectoryContainSymLinks(string path)
         {
-            if (!_areSymLinksLinuxSupported)
+            if (!Directory.Exists(path))
             {
                 return false;
             }
 
-            path = CleanPath(path);
-
-            if (!Directory.Exists(path) && !File.Exists(path))
-            {
-                return false;
-            }
-
-            var linuxPath = GetLinuxPath(path);
-
-            var proc = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = symlinkBin,
-                    Arguments = $"-v \"{linuxPath}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            proc.Start();
-
-            try
-            {
-                proc.WaitForExit();
-            }
-            catch
-            {
-                FileLogger.Info("Process finished early on symlink valdiation.");
-            }
-
-
-            int exitCode;
-
-            try
-            {
-                exitCode = proc.ExitCode;
-            }
-            catch
-            {
-                FileLogger.Info("Could not retrieve exit code for symbolic link check.");
-                throw new Exception("Could not retrieve exit code for symbolic link check.");
-            }
-
-            proc.Close();
-
-            if (exitCode < 0)
-            {
-                FileLogger.Info($"Could not determine if '{path}' is a symbolic link.");
-                throw new Exception($"Could not determine if '{path}' is a symbolic link.");
-            }
-            else if (exitCode == 1)
+            if (IsSymbolicLink(path))
             {
                 return true;
+            }
+
+            var queue = new Queue<string>();
+            queue.Enqueue(path);
+
+            while (queue.Count > 0)
+            {
+                var dirPath = queue.Dequeue();
+                var files = Directory.GetFiles(dirPath);
+
+                if (files.Any(f => IsSymbolicLink(f)))
+                {
+                    return true;
+                }
+
+                var subDirs = Directory.GetDirectories(dirPath);
+                if (subDirs.Any(s => IsSymbolicLink(s)))
+                {
+                    return true;
+                }
+
+                foreach (var subDir in subDirs)
+                {
+                    queue.Enqueue(subDir);
+                }
             }
 
             return false;
         }
 
-        private static string GetLinuxPath(string path, bool checkPath = true)
+        public static void CreateSymlinkLinux(string source, string destination)
         {
-            var linuxPath = string.Empty;
-            var realPath = checkPath ? GetRealPath(path) : path;
-
-            var proc = new Process
+            if (string.IsNullOrWhiteSpace(source) ||  string.IsNullOrWhiteSpace(destination))
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "winepath.exe",
-                    Arguments = $"-u \"{realPath}\"",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                }
-            };
-
-            proc.Start();
-
-            while (!proc.StandardOutput.EndOfStream)
-            {
-                linuxPath = proc.StandardOutput.ReadLine();
+                FileLogger.Info($"Symbolic Link aborted. Invalid source '{source}' or destination '{destination}'.");
+                return;
             }
 
-            proc.Close();
+            var isDirectory = Directory.Exists(source);
 
-            linuxPath = CleanPath(linuxPath);
+            if (!isDirectory && !File.Exists(source))
+            {
+                FileLogger.Info($"Symbolic Link aborted. Source '{source}' does not exists.");
+                return;
+            }
+
+            if (!_areSymLinksLinuxSupported)
+            {
+                return;
+            }
+
+            if (!_createWindowsSymlinkDelegate(source, destination))
+            {
+                FileLogger.Info($"Could not create symlink for source '{source}' and destination '{destination}'.");
+                throw new Exception($"Could not create symlink for source '{source}' and destination '{destination}'.");
+            }
+        }
+
+        private static string GetLinuxPath(string path)
+        {
+            var sb = new StringBuilder(2048);
+            if (!_convertWindowsPathDelegate(path, sb, sb.Capacity))
+            {
+                FileLogger.Info("Convert delegate returned false");
+                return path;
+            }
+
+            var linuxPath = sb.ToString();
 
             return linuxPath;
-        }
-
-        private static string CleanPath(string path)
-        {
-            if (path.EndsWith(":/") || path.EndsWith(":\\"))
-            {
-                return path;
-            }
-
-            path = path.Trim();
-
-            if (path == "./" || path == ".\\")
-            {
-                return path;
-            }
-
-            while (path.EndsWith("/") || path.EndsWith("\\"))
-            {
-                path = path.Substring(0, path.Length - 1);
-            }
-
-            return path;
-        }
-
-        public static string GetRealPath(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                throw new Exception("Argument for GetRealPath was null or an empty string.");
-            }
-
-            var absolutePath = Path.GetFullPath(path);
-
-            if (absolutePath.EndsWith(":\\") || absolutePath.EndsWith(":/"))
-            {
-                return absolutePath;
-            }
-
-            var name = Path.GetFileName(absolutePath);
-            var parent = Path.GetDirectoryName(absolutePath);
-
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return GetRealPath(parent);
-            }
-
-            string realName = string.Empty;
-
-            for (int i = 0; i < 10; i++)
-            {
-                try
-                {
-                    if (Directory.Exists(parent))
-                    {
-                        if (Directory.Exists(absolutePath))
-                        {
-                            realName = Directory.GetDirectories(parent, name).FirstOrDefault();
-                        }
-                        else if (File.Exists(absolutePath))
-                        {
-                            realName = Directory.GetFiles(parent, name).FirstOrDefault();
-                        }
-                    }
-
-                    break;
-                }
-                catch (System.IO.IOException iex)
-                {
-                    realName = string.Empty;
-
-                    FileLogger.Info($"Could not access '{parent}' when looking for '{name}'. Details: {iex}");
-                }
-                catch (Exception ex)
-                {
-                    FileLogger.Info($"Crashed when visiting directory '{parent}' and looking for '{name}'.");
-
-                    throw ex;
-                }
-            }
-
-            if (string.IsNullOrEmpty(realName))
-            {
-                realName = name;
-            }
-
-            var realParent = GetRealPath(parent);
-
-            return Path.Combine(realParent, Path.GetFileName(realName));
         }
 
         private static void TestHardLinks(string modPath)
@@ -673,11 +392,61 @@ namespace Frosty.Core
             CreateHardLink(destination, source, IntPtr.Zero);
         }
 
+        public static IntPtr SafeLoadLibrary(string path)
+        {
+            // save old error mode
+            uint oldMode;
+            SetThreadErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX, out oldMode);
+
+            try
+            {
+                return LoadLibrary(path);
+            }
+            finally
+            {
+                // restore previous mode
+                SetThreadErrorMode(oldMode, out _);
+            }
+        }
+
         [DllImport("Kernel32.dll", CharSet = CharSet.Unicode)]
         private static extern bool CreateHardLink(
             string lpFileName,
             string lpExistingFileName,
             IntPtr lpSecurityAttributes
         );
+
+        // LoadLibrary and GetProcAddress are from kernel32
+        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Ansi)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint SetThreadErrorMode(uint dwNewMode, out uint lpOldMode);
+
+        private const uint SEM_FAILCRITICALERRORS = 0x0001;
+        private const uint SEM_NOOPENFILEERRORBOX = 0x8000;
+
+        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Ansi)]
+        private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+        [DllImport("kernel32", SetLastError = true)]
+        private static extern bool FreeLibrary(IntPtr hModule);
+
+        // Delegate that matches the signature of your function
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private delegate bool ConvertWindowsPathDelegate(
+            [MarshalAs(UnmanagedType.LPStr)]  string path,
+            [MarshalAs(UnmanagedType.LPStr)]  StringBuilder buffer,
+            int bufferSize
+        );
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private delegate bool IsWindowsPathSymlinkDelegate(string path);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private delegate bool DeleteWindowsPathDelegate(string path);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private delegate bool CreateWindowsSymlinkDelegate(string source, string destination);
     }
 }

@@ -1,19 +1,19 @@
 # FrostyToolSuite Linux version
 The most advanced modding platform for games running on DICE's Frostbite game engine.
 
-Uses [WinmmProxy](https://github.com/maniman303/winmm-proxy), [CryptHook](https://github.com/maniman303/CryptHook) and [Wine-symlink-helper](https://github.com/maniman303/wine-symlink-helper).
+Uses [Dinput8Proxy](https://github.com/maniman303/dinput8-proxy), [CryptHook](https://github.com/maniman303/CryptHook) and [Wine-symlink-dll](https://github.com/maniman303/wine-symlink-dll).
 
 Uses [SharpSevenZip](https://github.com/JeremyAnsel/SharpSevenZip)
 
 ## Changes in this fork
 
 - Fixed symbolic linking of files in mod deployment.
-- Added hard linking option for mod deployment (on by default).
+- Added hard linking option for mod deployment (off by default).
 - Reworked actions tab and fixed it's performance.
 - Fixed drag and drop on Linux.
 - Fixed game icons on Linux.
 - Added `Install mods` button.
-- Fixed `BCryptVerifySignature` patching with [WinmmProxy](https://github.com/maniman303/winmm-proxy) and [CryptHook](https://github.com/maniman303/CryptHook).
+- Fixed `BCryptVerifySignature` patching with [Dinput8Proxy](https://github.com/maniman303/dinput8-proxy) and [CryptHook](https://github.com/maniman303/CryptHook).
 - Fixed multi threading issues in the program.
 - Fixed minimize, maximize, close buttons on Linux.
 - Disabled auto update.
@@ -53,20 +53,17 @@ Pros:
 - Clear indication in file explorer if file is modded or not
 
 Cons:
-- Slower
-- Unsafe if not approached carefully
+- A little less safe, experimental
 
 ## Symbolic links on Linux aka Mission Impossible
 
 Even if Linux supports symbolic links just fine, Wine does not implement their support at all. But fortunately there is a loop hole, that allowed me to *reimplement* symbolic links under Wine.
 
-I've implemented simple [Wine-symlink-helper](https://github.com/maniman303/wine-symlink-helper) program, that allows me to perform basic symbolic link operations under Frosty. For whatever reason output redirection doesn't work, so I had to substitute proper communication with exit code reading. Still, it does its job.
+I've implemented simple [Wine-symlink-dll](https://github.com/maniman303/wine-symlink-dll), which is a custom Wine PE DLL. This allows me to perform basic symbolic link operations under Frosty. It does its job alright.
 
-To translate Windows paths to Linux I'm using `winepath.exe` from Wine.
+To translate Windows paths to Linux I'm using `wine_get_unix_file_name` from Wines `windows.h` header.
 
-Unfortunately, there are some issues with this hack of a proper solution.
-- Performance. Running a whole new process to create/remove/check file increases time spent on the operation tens or hundreds times. Frosty has a case where it has to scan provided directory to check if any symbolic link exists there, including sub directories. Even when using BFS search with running checks in parallel multitasking, scanning hard linked Dragon Age Inquisition mod directory (without a single symbolic link) takes on my Steam Deck 3 minutes. On Windows the same algorithm took a mere second. Because of this I had to reimplement algorithm with C++ in [Wine-symlink-helper](https://github.com/maniman303/wine-symlink-helper), which does the job well, but long term I don't see it viable to every single every single use case.
-- Compatibility is also an issue here, because we can't assume that the binary will always work. Because of this, in code, I try to test support for symbolic and hard links, but it's not a guarantee.
+It is an experimental approach with risks, that hacks Wines safeguards, but until Wine starts properly supporting symlinks it's the best we have.
 
 ## Setup
 

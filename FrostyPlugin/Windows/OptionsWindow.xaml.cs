@@ -371,7 +371,7 @@ namespace Frosty.Core.Windows
         [DisplayName("Use Hard Links")]
         [Description("Use Hard Links for mod installation. Safer, but requires more space.")]
         [EbxFieldMeta(EbxFieldType.Boolean)]
-        public bool UseHardLink { get; set; } = true;
+        public bool UseHardLink { get; set; } = false;
 
         [Category("Update Checking")]
         [DisplayName("Check for Updates")]
@@ -420,7 +420,7 @@ namespace Frosty.Core.Windows
 
             EASetup = Config.Get<bool>("EASetup", false);
 
-            UseHardLink = Config.Get<bool>("UseHardLink", true);
+            UseHardLink = Config.Get<bool>("UseHardLink", false);
 
             UpdateCheck = Config.Get<bool>("UpdateCheck", false);
 

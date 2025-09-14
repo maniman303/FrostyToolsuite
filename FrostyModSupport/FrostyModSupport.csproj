@@ -144,7 +144,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ThirdParty\wine-symlink-helper.exe.so">
+    <None Include="ThirdParty\wine-symlink.dll.so">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
