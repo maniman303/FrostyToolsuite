@@ -270,6 +270,11 @@ namespace Frosty.Core
 
         private static void TestHardLinks(string path)
         {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return;
+            }
+
             var orgFile = Path.Combine(path, "hard_link_test.txt");
             var linkFile = Path.Combine(path, "hard_link_test_link.txt");
 

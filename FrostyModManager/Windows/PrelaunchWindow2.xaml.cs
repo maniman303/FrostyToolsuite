@@ -31,6 +31,8 @@ namespace FrostyModManager.Windows
         public PrelaunchWindow2()
         {
             InitializeComponent();
+
+            SymLinkHelper.Initialize(string.Empty);
         }
 
         private void LaunchConfig(string profile /*Config config, string filename*/)
@@ -609,21 +611,9 @@ namespace FrostyModManager.Windows
                 return false;
             }
 
-            if (dirTempName == "pfx")
+            if (SymLinkHelper.IsSymbolicLink(dir))
             {
-                try
-                {
-                    var pfxDirs = Directory.GetDirectories(dir);
-
-                    if (pfxDirs.Any(p => Path.GetFileName(p).Trim().ToLower() == "pfx"))
-                    {
-                        return false;
-                    }
-                }
-                catch
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
