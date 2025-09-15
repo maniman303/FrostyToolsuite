@@ -108,7 +108,6 @@ namespace FrostyModManager
             {
                 try
                 {
-                    SymLinkHelper.Initialize(selectedPack.Path);
                     SymLinkHelper.DeleteDirectorySafe(selectedPack.Path);
                     listPacks();
                 }

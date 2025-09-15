@@ -1295,8 +1295,6 @@ namespace Frosty.ModSupport
                 return -3;
             }
 
-            SymLinkHelper.Initialize(fs.BasePath);
-
             FileLogger.Info($"Hard Link support: {SymLinkHelper.AreHardLinksSupported}");
             FileLogger.Info($"Symbolic Link support: {SymLinkHelper.AreSymLinksSupported}");
 
@@ -1412,7 +1410,7 @@ namespace Frosty.ModSupport
                     FileLogger.Info("Reseting ModData is not needed");
                     newInstallation = true;
                 }
-                else if (ShouldCleanModDir(modDataPath) || OperatingSystemHelper.IsWine())
+                else if (ShouldCleanModDir(modDataPath))
                 {
                     Logger.Log("Reseting ModData, it can take a few minutes");
                     FileLogger.Info($"Reseting ModData at '{modDataPath}'.");
@@ -1836,9 +1834,14 @@ namespace Frosty.ModSupport
                         }
                     }
 
+                    var fileStreamPath = modDataPath + patchPath + "/layout.toc";
+                    PrepareWriteFile(fileStreamPath);
+
                     // write out layout.toc with additional cas entries where required
-                    using (DbWriter writer = new DbWriter(new FileStream(modDataPath + patchPath + "/layout.toc", FileMode.Create), true))
+                    using (DbWriter writer = new DbWriter(new FileStream(fileStreamPath, FileMode.Create), true))
+                    {
                         writer.Write(layout);
+                    }
                 }
                 else if (ProfilesLibrary.DataVersion == (int)ProfileVersion.StarWarsBattlefrontII || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield5)
                 {
@@ -2053,9 +2056,14 @@ namespace Frosty.ModSupport
                         {
                             FileInfo fi = new FileInfo(modDataPath + patchPath + "\\" + entry.Catalog + "\\cas.cat");
                             if (!fi.Directory.Exists)
+                            {
                                 Directory.CreateDirectory(fi.Directory.FullName);
+                            }
 
-                            using (NativeWriter writer = new NativeWriter(new FileStream(modDataPath + patchPath + "\\" + entry.Catalog + "\\cas.cat", FileMode.Create)))
+                            var fileStreamPath = modDataPath + patchPath + "\\" + entry.Catalog + "\\cas.cat";
+                            PrepareWriteFile(fileStreamPath);
+
+                            using (NativeWriter writer = new NativeWriter(new FileStream(fileStreamPath, FileMode.Create)))
                             {
                                 writer.Write(reader.ReadBytes(0x23C));
                                 writer.Write(0x00);
@@ -2107,8 +2115,13 @@ namespace Frosty.ModSupport
                         }
                     }
 
-                    using (DbWriter writer = new DbWriter(new FileStream(modDataPath + patchPath + "/layout.toc", FileMode.Create), true))
+                    var fileStreamPath = modDataPath + patchPath + "/layout.toc";
+                    PrepareWriteFile(fileStreamPath);
+
+                    using (DbWriter writer = new DbWriter(new FileStream(fileStreamPath, FileMode.Create), true))
+                    {
                         writer.Write(layout);
+                    }
                 }
                 else if (ProfilesLibrary.DataVersion != (int)ProfileVersion.Fifa19 && ProfilesLibrary.DataVersion != (int)ProfileVersion.Madden20 && ProfilesLibrary.DataVersion != (int)ProfileVersion.Fifa20)
                 {
@@ -2171,8 +2184,12 @@ namespace Frosty.ModSupport
 
                     FileLogger.Info($"Write layout.toc at '{layoutLocation}'");
 
+                    PrepareWriteFile(layoutLocation);
+
                     using (DbWriter writer = new DbWriter(new FileStream(layoutLocation, FileMode.Create), true))
+                    {
                         writer.Write(layout);
+                    }
                 }
 
                 if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa17 || ProfilesLibrary.DataVersion == (int)ProfileVersion.DragonAgeInquisition || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield4 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeed || ProfilesLibrary.DataVersion == (int)ProfileVersion.PlantsVsZombiesGardenWarfare2 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeedRivals)
@@ -2233,11 +2250,6 @@ namespace Frosty.ModSupport
             }
 
             CopyFileIfRequired(fs.BasePath + "user.cfg", modDataPath + "user.cfg");
-
-            if (!ShouldUseHardLink() && Config.Get<bool>("EASetup", false))
-            {
-                LinkEaMods(fs.BasePath, modDataPath);
-            }
 
             // FIFA games require a fifaconfig workaround
             if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa17 || ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa18 || ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa19 || ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa20)
@@ -2364,20 +2376,6 @@ namespace Frosty.ModSupport
             {
                 ExecuteProcess($"{basePath + ProfilesLibrary.ProfileName}.exe", $"-dataPath \"{modDataPath.Trim('\\')}\" {additionalArgs}");
             }
-        }
-
-        private void LinkEaMods(string gamePath, string modDataPath)
-        {
-            var eaModsPath = Path.Combine(gamePath, "EAMods");
-
-            var symLink = new SymLinkStruct(eaModsPath, modDataPath, true);
-
-            var links = new List<SymLinkStruct>
-            {
-                symLink
-            };
-
-            RunSymbolicLinkProcess(links);
         }
 
         private List<ModInfo> GenerateModInfoList(string[] modPaths, string rootPath)
@@ -2545,6 +2543,8 @@ namespace Frosty.ModSupport
                 reader.Position = 0;
                 header = reader.ReadBytes(0x22C);
             }
+
+            PrepareWriteFile(fi.FullName);
 
             // write out new modified cat
             using (NativeWriter writer = new NativeWriter(new FileStream(fi.FullName, FileMode.Create)))
@@ -3023,6 +3023,16 @@ namespace Frosty.ModSupport
                     File.Copy(baseFi.FullName, modFi.FullName, true);
                 }
             }
+        }
+
+        private void PrepareWriteFile(string path)
+        {
+            if (!SymLinkHelper.IsSymbolicLink(path))
+            {
+                return;
+            }
+
+            SymLinkHelper.DeleteFileSafe(path);
         }
     }
 }

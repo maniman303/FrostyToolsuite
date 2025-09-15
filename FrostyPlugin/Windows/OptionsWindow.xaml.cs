@@ -362,12 +362,6 @@ namespace Frosty.Core.Windows
         public string CustomModsDirectory { get; set; }
 
         [Category("Manager")]
-        [DisplayName("EA Setup")]
-        [Description("Create Sym Link 'EAMods' to 'ModData/{last profile}' inside game folder for easier usage with EA App. Requires Hard Links to be disabled.")]
-        [EbxFieldMeta(EbxFieldType.Boolean)]
-        public bool EASetup { get; set; } = true;
-
-        [Category("Manager")]
         [DisplayName("Use Hard Links")]
         [Description("Use Hard Links for mod installation. Safer, but requires more space.")]
         [EbxFieldMeta(EbxFieldType.Boolean)]
@@ -418,8 +412,6 @@ namespace Frosty.Core.Windows
 
             CustomModsDirectory = Config.Get<string>("CustomModsDirectory", "");
 
-            EASetup = Config.Get<bool>("EASetup", false);
-
             UseHardLink = Config.Get<bool>("UseHardLink", false);
 
             UpdateCheck = Config.Get<bool>("UpdateCheck", false);
@@ -436,7 +428,6 @@ namespace Frosty.Core.Windows
 
         public override void Save()
         {
-            Config.Add("EASetup", EASetup);
             Config.Add("UseHardLink", UseHardLink);
             Config.Add("UseDefaultProfile", RememberChoice);
             Config.Add("CommandLineArgs", CommandLineArgs, ConfigScope.Game);

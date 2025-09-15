@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Frosty.Core
 {
@@ -28,9 +29,9 @@ namespace Frosty.Core
         private static bool _areSymLinksLinuxSupported = false;
         public static bool AreSymLinksSupported => !OperatingSystemHelper.IsWine() || _areSymLinksLinuxSupported;
 
-        public static void Initialize(string modPath)
+        public static void Initialize(string path)
         {
-            TestHardLinks(modPath);
+            TestHardLinks(path);
 
             if (!UpdateRegistry())
             {
@@ -246,8 +247,13 @@ namespace Frosty.Core
             }
         }
 
-        private static string GetLinuxPath(string path)
+        public static string GetLinuxPath(string path)
         {
+            if (!_areSymLinksLinuxSupported)
+            {
+                return path;
+            }
+
             var sb = new StringBuilder(2048);
             if (!_convertWindowsPathDelegate(path, sb, sb.Capacity))
             {
@@ -257,13 +263,15 @@ namespace Frosty.Core
 
             var linuxPath = sb.ToString();
 
+            linuxPath = Regex.Replace(linuxPath.Replace('\\', '/'), "/{2,}", "/");
+
             return linuxPath;
         }
 
-        private static void TestHardLinks(string modPath)
+        private static void TestHardLinks(string path)
         {
-            var orgFile = Path.Combine(modPath, "hard_link_test.txt");
-            var linkFile = Path.Combine(modPath, "hard_link_test_link.txt");
+            var orgFile = Path.Combine(path, "hard_link_test.txt");
+            var linkFile = Path.Combine(path, "hard_link_test_link.txt");
 
             try
             {

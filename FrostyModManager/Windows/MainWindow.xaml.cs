@@ -444,6 +444,8 @@ namespace FrostyModManager
                 App.Logger.Log("Custom Mods Directory does not exist, using default instead");
             }
 
+            SymLinkHelper.Initialize(fs.BasePath);
+
             FrostyTaskWindow.Show("Loading Mods", "", (logger) =>
             {
                 if (!modsDir.Exists)
@@ -904,7 +906,7 @@ namespace FrostyModManager
 
             if (retCode == 0)
             {
-                var arguments = Config.Get<bool>("EASetup", false) ? "-dataPath EAMods" : $"-dataPath \"ModData/{App.SelectedPack}\"";
+                var arguments = $"-dataPath ModData/{App.SelectedPack}";
 
                 if (!string.IsNullOrWhiteSpace(additionalArgs))
                 {
@@ -915,13 +917,26 @@ namespace FrostyModManager
 
                 StringBuilder sb = new StringBuilder();
 
-                if (OperatingSystemHelper.IsWine() && !Config.Get<bool>("EASetup", false))
+                if (OperatingSystemHelper.IsWine())
                 {
-                    var linuxArguments = $"WINEDLLOVERRIDES=\"dinput8=n,b\" %command% {arguments}";
+                    var fullGamePath = SymLinkHelper.GetLinuxPath(fs.BasePath);
+
+                    var isSteam = fullGamePath.ToLower().Contains("steamapps/common");
+
+                    var linuxArguments = isSteam ? $"WINEDLLOVERRIDES=\"dinput8=n,b\" %command% " : "";
+                    linuxArguments += arguments;
 
                     clipBoardArgs = linuxArguments;
 
-                    sb.Append("To launch the game with mods use this Launch Options in Steam:\r\n\r\n");
+                    if (isSteam)
+                    {
+                        sb.Append("To launch the game with mods use this Launch Options in Steam:\r\n\r\n");
+                    }
+                    else
+                    {
+                        sb.Append("To launch the game with mods add these arguments in EA App to Launch Options:\r\n\r\n");
+                    }
+
                     sb.Append(linuxArguments);                    
                 }
                 else
