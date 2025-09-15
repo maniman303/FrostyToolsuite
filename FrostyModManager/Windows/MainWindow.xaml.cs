@@ -934,7 +934,7 @@ namespace FrostyModManager
                     }
                     else
                     {
-                        sb.Append("To launch the game with mods add these arguments in EA App to Launch Options:\r\n\r\n");
+                        sb.Append("To launch the game with mods add these arguments in EA App to Advanced launch options:\r\n\r\n");
                     }
 
                     sb.Append(linuxArguments);                    
