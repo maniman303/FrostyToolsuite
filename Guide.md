@@ -17,7 +17,9 @@ WINEDLLOVERRIDES=winmm=n,b
 
 (Should be set to `native,builtin`)
 
-3.Run `taskmgr` inside the wineprefix
+3.Run `taskmgr` inside the wineprefix (it doesn't actually have to be inside the same prefix)
+
+(Just do `umu-run FrostyModManager.exe` if you're having issues with regular wine)
 
 4.Select the .exe for the fmm gw1 linux build
 
