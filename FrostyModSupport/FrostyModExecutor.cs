@@ -362,6 +362,16 @@ namespace Frosty.ModSupport
 
         private void ProcessModResources(IResourceContainer fmod)
         {
+            if (fmod == null)
+            {
+                throw new ArgumentException("Cannot process mod resources for null.");
+            }
+
+            if (fmod.Resources == null)
+            {
+                throw new ArgumentException("Cannot process mod resources for null resource list.");
+            }
+
             // Bundle whitelist may not contain the chunk bundle. This adds it to prevent issues
             if (App.WhitelistedBundles.Count != 0)
             {
@@ -377,6 +387,11 @@ namespace Frosty.ModSupport
                 // pull existing bundles from asset manager
                 HashSet<int> bundles = new HashSet<int>();
 
+                if (resource == null)
+                {
+                    throw new NullReferenceException("Found null resource during mod resources parallel processing.");
+                }
+
                 if (resource.Type == ModResourceType.Bundle)
                 {
                     BundleEntry bEntry = new BundleEntry();
@@ -391,6 +406,11 @@ namespace Frosty.ModSupport
                 }
                 else if (resource.Type == ModResourceType.Ebx)
                 {
+                    if (resource.IsModified && resource.Name == null)
+                    {
+                        throw new NullReferenceException("Ebx resource name is null.");
+                    }
+
                     if (resource.IsModified || !modifiedEbx.ContainsKey(resource.Name))
                     {
                         if (resource.HasHandler)
@@ -412,7 +432,9 @@ namespace Frosty.ModSupport
 
                                 ICustomActionHandler handler = App.PluginManager.GetCustomHandler((uint)resource.Handler);
                                 if (handler != null)
+                                {
                                     extraData.Handler = handler;
+                                }
 
                                 // add in existing bundles
                                 var ebxEntry = am.GetEbxEntry(resource.Name);
@@ -427,16 +449,33 @@ namespace Frosty.ModSupport
 
                             // merge new and old data together
                             if (extraData != null)
+                            {
+                                if (extraData.Handler == null)
+                                {
+                                    throw new NullReferenceException("Extra data handler is null.");
+                                }
+
                                 extraData.Data = extraData.Handler.Load(extraData.Data, data);
+                            }
                         }
                         else
                         {
                             if (modifiedEbx.TryGetValue(resource.Name, out EbxAssetEntry existingEntry))
                             {
                                 if (existingEntry.ExtraData != null)
+                                {
                                     goto label_add_bundles;
+                                }
+
                                 if (existingEntry.Sha1 == resource.Sha1)
+                                {
                                     goto label_add_bundles;
+                                }
+
+                                if (existingEntry.Sha1 == null)
+                                {
+                                    throw new NullReferenceException("Existing ebx entry Sha1 is null.");
+                                }
 
                                 if (!archiveData.ContainsKey(existingEntry.Sha1))
                                 {
@@ -445,7 +484,9 @@ namespace Frosty.ModSupport
 
                                 archiveData[existingEntry.Sha1].RefCount--;
                                 if (archiveData[existingEntry.Sha1].RefCount == 0)
+                                {
                                     archiveData.TryRemove(existingEntry.Sha1, out _);
+                                }
 
                                 modifiedEbx.TryRemove(resource.Name, out _);
                                 numArchiveEntries--;
@@ -461,6 +502,11 @@ namespace Frosty.ModSupport
 
                             if (data == null)
                             {
+                                if (ebxEntry == null)
+                                {
+                                    throw new NullReferenceException("Ebx EbxEntry is null.");
+                                }
+
                                 data = NativeReader.ReadInStream(am.GetRawStream(ebxEntry));
 
                                 if (data != null && data.Length > 0)
@@ -499,6 +545,16 @@ namespace Frosty.ModSupport
                             //archiveInfo.Data = data;
                             entry.Size = data.Length;
 
+                            if (entry.Name == null)
+                            {
+                                throw new NullReferenceException("Entry name is null.");
+                            }
+
+                            if (entry.Sha1 == null)
+                            {
+                                throw new NullReferenceException("Entry Sha1 is null.");
+                            }
+
                             modifiedEbx.TryAdd(entry.Name, entry);
                             if (!archiveData.TryAdd(entry.Sha1, archiveInfo))
                             {
@@ -511,6 +567,11 @@ namespace Frosty.ModSupport
                 }
                 else if (resource.Type == ModResourceType.Res)
                 {
+                    if (resource.IsModified && resource.Name == null)
+                    {
+                        throw new NullReferenceException("Res resource name is null.");
+                    }
+
                     if (resource.IsModified || !modifiedRes.ContainsKey(resource.Name))
                     {
                         if (resource.HasHandler)
@@ -532,10 +593,17 @@ namespace Frosty.ModSupport
 
                                 ICustomActionHandler handler = App.PluginManager.GetCustomHandler((ResourceType)entry.ResType);
                                 if (handler != null)
+                                {
                                     extraData.Handler = handler;
+                                }
 
                                 // add in existing bundles
                                 var resEntry = am.GetResEntry(resource.Name);
+                                if (resEntry.Bundles == null)
+                                {
+                                    throw new NullReferenceException("ResEntry Bundles are null.");
+                                }
+
                                 foreach (int bid in resEntry.Bundles)
                                 {
                                     bundles.Add(HashBundle(am.GetBundleEntry(bid)));
@@ -547,16 +615,28 @@ namespace Frosty.ModSupport
 
                             // merge new and old data together
                             if (extraData != null)
+                            {
                                 extraData.Data = extraData.Handler.Load(extraData.Data, data);
+                            }
                         }
                         else
                         {
                             if (modifiedRes.TryGetValue(resource.Name, out ResAssetEntry existingEntry))
                             {
                                 if (existingEntry.ExtraData != null)
+                                {
                                     goto label_add_bundles;
+                                }
+
                                 if (existingEntry.Sha1 == resource.Sha1)
+                                {
                                     goto label_add_bundles;
+                                }
+
+                                if (existingEntry.Sha1 == null)
+                                {
+                                    throw new NullReferenceException("Existing res entry Sha1 is null.");
+                                }
 
                                 if (!archiveData.ContainsKey(existingEntry.Sha1))
                                 {
@@ -565,7 +645,9 @@ namespace Frosty.ModSupport
 
                                 archiveData[existingEntry.Sha1].RefCount--;
                                 if (archiveData[existingEntry.Sha1].RefCount == 0)
+                                {
                                     archiveData.TryRemove(existingEntry.Sha1, out _);
+                                }
 
                                 modifiedRes.TryRemove(resource.Name, out _);
                                 numArchiveEntries--;
@@ -581,15 +663,19 @@ namespace Frosty.ModSupport
 
                             if (data == null)
                             {
+                                if (resEntry == null)
+                                {
+                                    throw new NullReferenceException("Res ResEntry befor native reader is null.");
+                                }
+
                                 data = NativeReader.ReadInStream(am.GetRawStream(resEntry));
-                                
                                 if (data != null && data.Length > 0)
                                 {
                                     archiveInfo.SetRawOrigin(am, resEntry);
                                 }
                                 else
                                 {
-                                    archiveInfo.Data = data;
+                                    archiveInfo.Data = data ?? new byte[0];
                                 }
 
                                 entry.Sha1 = resEntry.Sha1;
@@ -611,6 +697,11 @@ namespace Frosty.ModSupport
 
                                 if (resEntry != null)
                                 {
+                                    if (resEntry.Bundles == null)
+                                    {
+                                        throw new NullReferenceException("Later ResEntry Bundles are null.");
+                                    }
+
                                     // add in existing bundles
                                     foreach (int bid in resEntry.Bundles)
                                     {
@@ -620,17 +711,25 @@ namespace Frosty.ModSupport
                             }
 
                             //archiveInfo.Data = data;
-                            entry.Size = data.Length;
+                            entry.Size = data?.Length ?? 0;
 
                             modifiedRes.TryAdd(entry.Name, entry);
                             if (!archiveData.TryAdd(entry.Sha1, archiveInfo))
+                            {
                                 archiveData[entry.Sha1].RefCount++;
+                            }
+
                             numArchiveEntries++;
                         }
                     }
                 }
                 else if (resource.Type == ModResourceType.Chunk)
                 {
+                    if (resource.Name == null)
+                    {
+                        throw new NullReferenceException("Res resource name is null.");
+                    }
+
                     Guid guid = new Guid(resource.Name);
                     if (resource.IsModified || !modifiedChunks.ContainsKey(guid))
                     {
@@ -850,6 +949,11 @@ namespace Frosty.ModSupport
                 }
                 
                 label_add_bundles:
+                if (resource.AddedBundles == null)
+                {
+                    throw new NullReferenceException("Resource AddedBundles in adding bundle actions are null.");
+                }
+
                 // add bundle actions (these are stored in the mod)
                 foreach (int bundleHash in resource.AddedBundles)
                 {
@@ -862,6 +966,14 @@ namespace Frosty.ModSupport
                     modifiedBundles.TryAdd(bundleHash, new ModBundleInfo() { Name = bundleHash });
 
                     ModBundleInfo modBundle = modifiedBundles[bundleHash];
+                    if (modBundle == null &&
+                        (resource.Type == ModResourceType.Ebx ||
+                         resource.Type == ModResourceType.Res ||
+                         resource.Type == ModResourceType.Chunk))
+                    {
+                        throw new NullReferenceException("ModBundle is null.");
+                    }
+
                     switch (resource.Type)
                     {
                         case ModResourceType.Ebx: modBundle.Add.AddEbx(resource.Name); break;
