@@ -37,13 +37,7 @@
 		<ItemGroup>
 			<FilesToDelete Include="$(OutputPath)\crashlog.txt"/>
 			<FilesToDelete Include="$(OutputPath)\executor.log"/>
-			<FilesToDelete Include="$(OutputPath)\FrostyControls.pdb"/>
-			<FilesToDelete Include="$(OutputPath)\FrostyCore.pdb"/>
 			<FilesToDelete Include="$(OutputPath)\FrostyCore.xml"/>
-			<FilesToDelete Include="$(OutputPath)\FrostyHash.pdb"/>
-			<FilesToDelete Include="$(OutputPath)\FrostyModManager.pdb"/>
-			<FilesToDelete Include="$(OutputPath)\FrostyModSupport.pdb"/>
-			<FilesToDelete Include="$(OutputPath)\FrostySdk.pdb"/>
 			<FilesToDelete Include="$(OutputPath)\sdk.log"/>
 		</ItemGroup>
 
