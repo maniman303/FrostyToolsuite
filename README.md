@@ -26,15 +26,12 @@ Uses [SharpSevenZip](https://github.com/JeremyAnsel/SharpSevenZip).
 
 ## Linux and Steam guide
 
-- Install Bottles from Flatpak.
-- Make sure Bottles have access to ALL USER FILES (you can add it with Flatseal, without it Frosty or even wine explorer can crash).
-- Create a new application bottle, use latest soda or wine kron4ek (not tkg) runner (proton-ge is not suggested).
-- If you are NOT using Proton make sure to install wine mono in bottle dependencies (usually auto installed).
-- Add Frosty Mod Manager directory as a new drive in bottle settings.
-- Run Explorer from Legacy Wine tools from your bottle to verify that drives are accessible.
-- Add FrostyModManager to shortcuts in the bottle, launch it.
-- Click Scan (it might take a while) or add game exe manually from the Z drive (Z drive is very important!).
-- Add mods with Add mods button (or drag and drop them), install mods with Install mods button.
+- Install native Steam (no flatpaks, snaps, or other shenanigans).
+- Add `FrostyModManager.exe` as a non-Steam game.
+- In Steam properties of Frosty set compatibility to later Proton-GE (10-28 as of writing).
+- Launch Frosty in Steam, click *Scan*.
+- Choose your game, add mods, add mods with *Add mods* button (or drag and drop them).
+- Install mods with *Install mods* button.
 - After mods installation take note of launch options provided by manager, add these options to the Steam game under game properties.
 
 ## Differences between hard and soft links
