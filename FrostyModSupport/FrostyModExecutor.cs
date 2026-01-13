@@ -1410,12 +1410,14 @@ namespace Frosty.ModSupport
             FileLogger.Info($"Hard Link support: {SymLinkHelper.AreHardLinksSupported}");
             FileLogger.Info($"Symbolic Link support: {SymLinkHelper.AreSymLinksSupported}");
 
-            if (!ShouldUseHardLink() && !SymLinkHelper.AreSymLinksSupported)
+            var shouldUseHardLink = ShouldUseHardLink();
+
+            if (!shouldUseHardLink && !SymLinkHelper.AreSymLinksSupported)
             {
                 return -2;
             }
 
-            FileLogger.Info($"Is using hard links: {ShouldUseHardLink()}");
+            FileLogger.Info($"Is using hard links: {shouldUseHardLink}");
 
             string patchPath = "Patch";
             if (ProfilesLibrary.DataVersion == (int)ProfileVersion.Fifa17 || ProfilesLibrary.DataVersion == (int)ProfileVersion.DragonAgeInquisition || ProfilesLibrary.DataVersion == (int)ProfileVersion.Battlefield4 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeed || ProfilesLibrary.DataVersion == (int)ProfileVersion.PlantsVsZombiesGardenWarfare2 || ProfilesLibrary.DataVersion == (int)ProfileVersion.NeedForSpeedRivals)
@@ -1492,7 +1494,7 @@ namespace Frosty.ModSupport
                     needsModding = true;
                 }
 
-                if (!needsModding && modSetup.IsHardlink != ShouldUseHardLink())
+                if (!needsModding && modSetup.IsHardlink != shouldUseHardLink)
                 {
                     FileLogger.Info($"Forcing mod install, due to not matching hard link usage.");
                     needsModding = true;
@@ -1522,7 +1524,7 @@ namespace Frosty.ModSupport
                     FileLogger.Info("Reseting ModData is not needed");
                     newInstallation = true;
                 }
-                else if (ShouldCleanModDir(modDataPath))
+                else if (ShouldCleanModDir(modDataPath, shouldUseHardLink))
                 {
                     Logger.Log("Reseting ModData, it can take a few minutes");
                     FileLogger.Info($"Reseting ModData at '{modDataPath}'.");
@@ -1778,15 +1780,15 @@ namespace Frosty.ModSupport
                     App.Logger.Log("Creating links");
                     FileLogger.Info("Creating links");
 
-                    if (!OperatingSystemHelper.IsWine() && !ShouldUseHardLink())
+                    if (!OperatingSystemHelper.IsWine() && !shouldUseHardLink)
                     {
                         FrostyMessageBox.Show(reason + "\r\n\r\nShortly you will be prompted for elevated privileges, this is required to create symbolic links between the original data and the new modified data. Please ensure that you accept this to avoid any issues.", "Frosty Toolsuite");
                     }
 
-                    if (!RunSymbolicLinkProcess(cmdArgs))
+                    if (!RunSymbolicLinkProcess(cmdArgs, shouldUseHardLink))
                     {
                         FrostyMessageBox.Show("Frosty needs to generate symbolic links, please ensure that you accept this so you don't have to regenerate ModData.", "Frosty Editor");
-                        if (!RunSymbolicLinkProcess(cmdArgs))
+                        if (!RunSymbolicLinkProcess(cmdArgs, shouldUseHardLink))
                         {
                             SymLinkHelper.DeleteDirectorySafe(modDataPath);
                             FrostyMessageBox.Show("One ore more symbolic links could not be created, please restart tool as Administrator and ensure your storage drive is formatted to NTFS (not exFAT).", "Frosty Editor");
@@ -2138,7 +2140,7 @@ namespace Frosty.ModSupport
                 cancelToken.ThrowIfCancellationRequested();
                 if (cmdArgs.Count > 0)
                 {
-                    RunSymbolicLinkProcess(cmdArgs);
+                    RunSymbolicLinkProcess(cmdArgs, shouldUseHardLink);
                 }
 
                 // reset threadpool
@@ -2321,7 +2323,7 @@ namespace Frosty.ModSupport
 
                 var newModSetup = new ModSetup
                 {
-                    IsHardlink = ShouldUseHardLink(),
+                    IsHardlink = shouldUseHardLink,
                     ModInfos = GenerateModInfoList(modPaths, rootPath),
                 };
 
@@ -2918,9 +2920,9 @@ namespace Frosty.ModSupport
             return false;
         }
 
-        private bool ShouldCleanModDir(string modPath)
+        private bool ShouldCleanModDir(string modPath, bool shouldUseHardLink)
         {
-            if (ShouldUseHardLink())
+            if (shouldUseHardLink)
             {
                 return true;
             }
@@ -2934,11 +2936,11 @@ namespace Frosty.ModSupport
             return !result;
         }
 
-        private bool RunSymbolicLinkProcess(List<SymLinkStruct> cmdArgs)
+        private bool RunSymbolicLinkProcess(List<SymLinkStruct> cmdArgs, bool shouldUseHardLink)
         {
             DeleteLinkDestinations(cmdArgs);
 
-            if (ShouldUseHardLink())
+            if (shouldUseHardLink)
             {
                 FileLogger.Info("Using hard linking.");
                 CreateHardLinksStructure(cmdArgs);

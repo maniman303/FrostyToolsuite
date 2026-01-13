@@ -1,5 +1,6 @@
 ﻿using FrostyModManager;
 using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -114,18 +115,20 @@ namespace Frosty.Core
                 return;
             }
 
-            if (!_areSymLinksLinuxSupported)
-            {
-                Directory.Delete(path, true);
-                return;
-            }
-
-            if (!_deleteWindowsPathDelegate(path))
+            if (_areSymLinksLinuxSupported && !_deleteWindowsPathDelegate(path))
             {
                 FileLogger.Info($"Could not safely remove directory '{path}'.");
 
                 throw new Exception($"Could not safely remove directory '{path}'.");
             }
+
+            if (IsSymbolicLink(path))
+            {
+                Directory.Delete(path, true);
+                return;
+            }
+
+            DeleteDirectoryRecursivly(path);
         }
 
         public static void DeleteFileSafe(string path)
@@ -151,6 +154,11 @@ namespace Frosty.Core
 
         public static bool IsSymbolicLink(string path)
         {
+            if (IsHardLink(path) > 0)
+            {
+                return true;
+            }
+
             if (_areSymLinksLinuxSupported)
             {
                 return _isWindowsPathSymlinkDelegate(path);
@@ -266,6 +274,133 @@ namespace Frosty.Core
             linuxPath = Regex.Replace(linuxPath.Replace('\\', '/'), "/{2,}", "/");
 
             return linuxPath;
+        }
+
+        private static void DeleteDirectoryRecursivly(string path)
+        {
+            var queue = new Queue<string>();
+            queue.Enqueue(path);
+
+            while (queue.Count > 0) 
+            {
+                var current = queue.Dequeue();
+                if (!Directory.Exists(current))
+                {
+                    continue;
+                }
+
+                var files = Directory.GetFiles(current);
+                foreach (var file in files)
+                {
+                    var hardlinks = IsHardLink(file);
+
+                    if (hardlinks > 0)
+                    {
+                        FileLogger.Info($"File [{file}] has {hardlinks} hard links.");
+                    }
+
+                    if (hardlinks == 1)
+                    {
+                        FileLogger.Info($"Could not safely remove file [{file}].\nPlease remove whole ModData folder manually.");
+                        throw new FileNotFoundException($"Could not safely remove file [{file}].\nPlease remove whole ModData folder manually.");
+                    }
+
+                    File.Delete(file);
+                }
+
+                var dirs = Directory.GetDirectories(current);
+                foreach (var dir in dirs)
+                {
+                    queue.Enqueue(dir);
+                }
+            }
+
+            Directory.Delete(path, true);
+        }
+
+        private static uint IsHardLink(string path)
+        {
+            if (Directory.Exists(path))
+            {
+                return 0;
+            }
+
+            if (!File.Exists(path))
+            {
+                return 0;
+            }
+
+            var orgPath = RemoveModDataSegment(path);
+            if (string.IsNullOrWhiteSpace(orgPath))
+            {
+                return 0;
+            }
+
+            if (!File.Exists(orgPath)) 
+            {
+                return 0;
+            }
+
+            var orgInfo = GetFileInfo(orgPath);
+            var info = GetFileInfo(path);
+
+            var res =
+                orgInfo.VolumeSerialNumber == info.VolumeSerialNumber &&
+                orgInfo.FileIndexHigh == info.FileIndexHigh &&
+                orgInfo.FileIndexLow == info.FileIndexLow;
+
+            if (!res)
+            {
+                return 0;
+            }
+
+            return info.NumberOfLinks;
+        }
+
+        private static string RemoveModDataSegment(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return string.Empty;
+            }
+
+            // Normalize separators
+            var normalized = path.Replace('/', '\\');
+
+            var parts = normalized.Split('\\').Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+
+            // Find "ModData"
+            int modDataIndex = Array.FindIndex(
+                parts,
+                p => string.Equals(p, "ModData", StringComparison.OrdinalIgnoreCase));
+
+            // Must have ModData + one folder after it
+            if (modDataIndex < 0 || modDataIndex + 1 >= parts.Length)
+            {
+                return string.Empty;
+            }
+
+            // Remove ModData and the folder after it
+            var resultParts = parts
+                .Where((_, i) => i != modDataIndex && i != modDataIndex + 1)
+                .ToArray();
+
+            // Preserve drive letter or UNC prefix
+            string prefix = Path.IsPathRooted(normalized)
+                ? Path.GetPathRoot(normalized)
+                : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(prefix))
+            {
+                return Path.Combine(resultParts);
+            }
+
+            if (resultParts.Length > 0)
+            {
+                resultParts[0] = string.Empty;
+            }
+
+            return prefix + Path.Combine(resultParts);
         }
 
         private static void TestHardLinks(string path)
@@ -428,6 +563,44 @@ namespace Frosty.Core
             string lpExistingFileName,
             IntPtr lpSecurityAttributes
         );
+
+        // Structs and data for hard link infos
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool GetFileInformationByHandle(
+        SafeFileHandle hFile,
+        out BY_HANDLE_FILE_INFORMATION lpFileInformation);
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct BY_HANDLE_FILE_INFORMATION
+        {
+            public uint FileAttributes;
+            public System.Runtime.InteropServices.ComTypes.FILETIME CreationTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME LastAccessTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME LastWriteTime;
+            public uint VolumeSerialNumber;
+            public uint FileSizeHigh;
+            public uint FileSizeLow;
+            public uint NumberOfLinks;
+            public uint FileIndexHigh;
+            public uint FileIndexLow;
+        }
+
+        static BY_HANDLE_FILE_INFORMATION GetFileInfo(string path)
+        {
+            using (var fs = new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete))
+            {
+                if (!GetFileInformationByHandle(fs.SafeFileHandle, out var info))
+                {
+                    throw new IOException("Failed to get file info");
+                }
+
+                return info;
+            }
+        }
 
         // LoadLibrary and GetProcAddress are from kernel32
         [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Ansi)]
