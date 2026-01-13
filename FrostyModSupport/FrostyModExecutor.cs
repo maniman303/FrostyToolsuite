@@ -435,6 +435,10 @@ namespace Frosty.ModSupport
                                 {
                                     extraData.Handler = handler;
                                 }
+                                else
+                                {
+                                    FileLogger.Info($"ExtraData handler for resource [{resource.Name}] is null.");
+                                }
 
                                 // add in existing bundles
                                 var ebxEntry = am.GetEbxEntry(resource.Name);

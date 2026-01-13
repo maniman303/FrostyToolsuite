@@ -127,7 +127,8 @@ namespace Frosty.Core
             if (!Directory.Exists("Plugins"))
             {
                 // Inform the user of the missing directory
-                logger.Log("The \"Plugins\" directory could not be located within the executable's associated directory. Due to some plugins being a necessity for functionality, please retrieve a copy of the needed directory from a clean archive of the editor/mod manager.");
+                FileLogger.Info("The 'Plugins' directory could not be located within the executable's associated directory. Due to some plugins being a necessity for functionality, please retrieve a copy of the needed directory from a clean archive of the editor/mod manager.");
+                logger.Log("The 'Plugins' directory could not be located within the executable's associated directory. Due to some plugins being a necessity for functionality, please retrieve a copy of the needed directory from a clean archive of the editor/mod manager.");
 
                 // Prevent further execution
                 return;
@@ -142,6 +143,14 @@ namespace Frosty.Core
 
                 // Add the plugin to the list of located plugins
                 m_plugins.Add(LoadPlugin(fileInfo.FullName, PluginLoadType.Startup));
+            }
+
+            if (m_plugins.Count == 0)
+            {
+                FileLogger.Info("Could not find any plugins in 'Plugins' directory.");
+                logger.Log("Could not find any plugins in 'Plugins' directory.");
+
+                //throw new FileNotFoundException("Could not find any plugins in 'Plugins' directory.");
             }
         }
 
@@ -358,6 +367,7 @@ namespace Frosty.Core
             }
             catch (Exception e)
             {
+                FileLogger.Info($"Caught exception while loading plugin '{pluginPath}'. Exception:\n{e}");
                 loadedPlugin.LoadException = e;
             }
 

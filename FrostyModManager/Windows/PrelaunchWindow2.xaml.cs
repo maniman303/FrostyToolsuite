@@ -256,6 +256,16 @@ namespace FrostyModManager.Windows
                 return;
             }
 
+            if (App.PluginManager.Plugins.Count() == 0)
+            {
+                var message = "Could not find any plugins in 'Plugins' directory.\r\n";
+                message += "Your setup is invalid and you won't be able to install mods until you solve it.";
+
+                FrostyMessageBox.Show(message, "Frosty Mod Manager");
+                Close();
+                return;
+            }
+
             RefreshConfigurationList();
 
             RemoveConfigButton.IsEnabled = false;
