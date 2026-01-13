@@ -24,6 +24,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrostyCore", "..\FrostyPlugin\FrostyCore.csproj", "{D86D23D9-DB93-4D4E-B383-5022F759ABA8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{492048B6-848D-4675-A9BF-34A4751303F2}"
+	ProjectSection(SolutionItems) = preProject
+		..\Plugins\Swbf2MergerPlugin.dll = ..\Plugins\Swbf2MergerPlugin.dll
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VersionDataPlugin", "..\Plugins\VersionDataPlugin\VersionDataPlugin.csproj", "{29189DBC-1D9C-4760-960E-805B60211401}"
 EndProject
