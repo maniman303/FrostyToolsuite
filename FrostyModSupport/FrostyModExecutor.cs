@@ -380,7 +380,7 @@ namespace Frosty.ModSupport
 
             var processorCount = Math.Max(1, Environment.ProcessorCount / 2);
 
-            // FileLogger.Info($"Using {processorCount} processor cores.");
+            FileLogger.Info($"Using {processorCount} processor cores.");
 
             Parallel.ForEach(fmod.Resources, new ParallelOptions() { MaxDegreeOfParallelism = processorCount }, resource =>
             {
