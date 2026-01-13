@@ -316,6 +316,7 @@ namespace Frosty.ModSupport
         private static int chunksBundleHash = Fnv1.HashString("chunks");
         private Dictionary<int, Dictionary<int, Dictionary<uint, CatResourceEntry>>> resources = new Dictionary<int, Dictionary<int, Dictionary<uint, CatResourceEntry>>>();
         private string modDirName = "ModData";
+        private readonly int maxDegreeOfParallelism = Math.Min(2, Math.Max(1, Environment.ProcessorCount));
 
         public FrostyTaskLogger Logger { get => logger; set => logger = value; }
 
@@ -378,11 +379,7 @@ namespace Frosty.ModSupport
                 App.WhitelistedBundles.Add(chunksBundleHash);
             }
 
-            var processorCount = Math.Max(1, Environment.ProcessorCount / 2);
-
-            FileLogger.Info($"Using {processorCount} processor cores.");
-
-            Parallel.ForEach(fmod.Resources, new ParallelOptions() { MaxDegreeOfParallelism = processorCount }, resource =>
+            Parallel.ForEach(fmod.Resources, new ParallelOptions() { MaxDegreeOfParallelism = maxDegreeOfParallelism }, resource =>
             {
                 // pull existing bundles from asset manager
                 HashSet<int> bundles = new HashSet<int>();
@@ -1621,7 +1618,7 @@ namespace Frosty.ModSupport
                 assetEntries.AddRange(modifiedChunks.Values);
 
                 int currentResource = 0;
-                Parallel.ForEach(assetEntries, new ParallelOptions() { MaxDegreeOfParallelism = Environment.ProcessorCount }, entry =>
+                Parallel.ForEach(assetEntries, new ParallelOptions() { MaxDegreeOfParallelism = maxDegreeOfParallelism }, entry =>
                 {
                     if (entry.ExtraData is HandlerExtraData handlerExtaData)
                     {
@@ -2000,7 +1997,7 @@ namespace Frosty.ModSupport
                     }
 
                     ReportProgress(0, tasks.Count);
-                    Parallel.ForEach(tasks.Values, new ParallelOptions() { MaxDegreeOfParallelism = Environment.ProcessorCount }, task =>
+                    Parallel.ForEach(tasks.Values, new ParallelOptions() { MaxDegreeOfParallelism = maxDegreeOfParallelism }, task =>
                     {
                         actions.Add(new ManifestBundleAction(task, this, cancelToken));
                         ReportProgress(actions.Count, tasks.Count);
