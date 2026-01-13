@@ -152,9 +152,13 @@ namespace Frosty.Core
             }
         }
 
-        public static bool IsSymbolicLink(string path)
+        public static bool IsSymbolicLink(string path, bool strict = false)
         {
-            if (IsHardLink(path) > 0)
+            if (!strict && (IsHardLink(path) > 0))
+            {
+                return true;
+            }
+            else if (strict && (IsHardLink(path) == 1))
             {
                 return true;
             }
@@ -187,14 +191,14 @@ namespace Frosty.Core
             return (attributes & FileAttributes.ReparsePoint) != 0;
         }
 
-        public static bool DoesDirectoryContainSymLinks(string path)
+        public static bool DoesDirectoryContainSymLinks(string path, bool strict = false)
         {
             if (!Directory.Exists(path))
             {
                 return false;
             }
 
-            if (IsSymbolicLink(path))
+            if (IsSymbolicLink(path, strict))
             {
                 return true;
             }
@@ -207,13 +211,13 @@ namespace Frosty.Core
                 var dirPath = queue.Dequeue();
                 var files = Directory.GetFiles(dirPath);
 
-                if (files.Any(f => IsSymbolicLink(f)))
+                if (files.Any(f => IsSymbolicLink(f, strict)))
                 {
                     return true;
                 }
 
                 var subDirs = Directory.GetDirectories(dirPath);
-                if (subDirs.Any(s => IsSymbolicLink(s)))
+                if (subDirs.Any(s => IsSymbolicLink(s, strict)))
                 {
                     return true;
                 }
@@ -294,10 +298,10 @@ namespace Frosty.Core
                 {
                     var hardlinks = IsHardLink(file);
 
-                    if (hardlinks > 0)
-                    {
-                        FileLogger.Info($"File [{file}] has {hardlinks} hard links.");
-                    }
+                    //if (hardlinks > 0)
+                    //{
+                    //    FileLogger.Info($"File [{file}] has {hardlinks} hard links.");
+                    //}
 
                     if (hardlinks == 1)
                     {

@@ -1463,6 +1463,7 @@ namespace Frosty.ModSupport
             FileLogger.Info("Setup verification");
 
             bool needsModding = false;
+            bool needsCleanModding = false;
             if (!File.Exists(Path.Combine(modDataPath, patchPath, "mods.json")))
             {
                 needsModding = true;
@@ -1498,6 +1499,7 @@ namespace Frosty.ModSupport
                 {
                     FileLogger.Info($"Forcing mod install, due to not matching hard link usage.");
                     needsModding = true;
+                    needsCleanModding = true;
                 }
 
                 var oldModInfoList = modSetup.ModInfos;
@@ -1524,7 +1526,7 @@ namespace Frosty.ModSupport
                     FileLogger.Info("Reseting ModData is not needed");
                     newInstallation = true;
                 }
-                else if (ShouldCleanModDir(modDataPath, shouldUseHardLink))
+                else if (ShouldCleanModDir(modDataPath, shouldUseHardLink || needsCleanModding))
                 {
                     Logger.Log("Reseting ModData, it can take a few minutes");
                     FileLogger.Info($"Reseting ModData at '{modDataPath}'.");
@@ -2920,16 +2922,16 @@ namespace Frosty.ModSupport
             return false;
         }
 
-        private bool ShouldCleanModDir(string modPath, bool shouldUseHardLink)
+        private bool ShouldCleanModDir(string modPath, bool force)
         {
-            if (shouldUseHardLink)
+            if (force)
             {
                 return true;
             }
 
             FileLogger.Info("Sym Link search started.");
 
-            var result = SymLinkHelper.DoesDirectoryContainSymLinks(modPath);
+            var result = SymLinkHelper.DoesDirectoryContainSymLinks(modPath, true);
 
             FileLogger.Info($"Sym Link search finished with result: {result}.");
 
