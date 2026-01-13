@@ -315,7 +315,10 @@ namespace Frosty.Core
                 }
             }
 
-            Directory.Delete(path, true);
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, true);
+            }
         }
 
         private static uint IsHardLink(string path)
